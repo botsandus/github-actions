@@ -18,24 +18,24 @@ on:
         type: string
         default: Dockerfile
         description: The path of the Dockerfile to use, relative to the root
-    outputs:
-      tag:
-        description: The image tag of the main build from this workflow
-        value: ${{ jobs.build.outputs.tag }}
+      runs-on:
+        required: false
+        type: string
+        default: self-hosted
+        description: Runner specification for this action
 
 jobs:
   build:
-    runs-on: self-hosted
-    env:
-      DOCKER_BUILDKIT: 1
-
-    outputs:
-      tag: ${{ steps.build.outputs.tag }}
+    runs-on: ${{ inputs.runs-on }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v1
+
+      - name: Checkout with submodules
+        uses: actions/checkout@v2
         with:
-          submodules: true
+          submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
       - name: Configure AWS credentials
@@ -50,17 +50,8 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and test the container
-        id: build
-        run: |
-          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
-          COMMIT_TAG=$REPO:${GITHUB_SHA}
-          docker build -f ${{ inputs.dockerfile }} --build-arg GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }} -t $COMMIT_TAG .
-          echo "::set-output name=tag::$COMMIT_TAG"
-
-      - name: Tag and push image to Amazon ECR
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
-
+      - name: Calculate tags
+        id: tag-calculator
         run: |
           REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
           BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
@@ -72,9 +63,25 @@ jobs:
           COMMIT_TAG=$REPO:${GITHUB_SHA}
           COMMIT_BRANCH_TAG=$REPO:${BRANCH}-${GITHUB_SHA}
 
-          for tag in $BUILD_TAG $BUILD_BRANCH_TAG $COMMIT_TAG $COMMIT_BRANCH_TAG; do
-            docker tag $COMMIT_TAG $tag && docker push $tag
-          done
+          echo "::set-output name=tags::$COMMIT_TAG,$BUILD_TAG,$BUILD_BRANCH_TAG,$COMMIT_BRANCH_TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push the container
+        id: build
+        uses: docker/build-push-action@v3
+        env:
+          DOCKER_BUILDKIT: 1
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+          build-args: |
+            GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }}
+          tags: ${{ steps.tag-calculator.outputs.tags }}
+          cache-from: type=gha,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }}
+          cache-to: type=gha,mode=max,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }}
 
       - uses: act10ns/slack@v1
         if: always()
