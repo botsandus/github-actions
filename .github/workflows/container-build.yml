@@ -18,24 +18,16 @@ on:
         type: string
         default: Dockerfile
         description: The path of the Dockerfile to use, relative to the root
-    outputs:
-      tag:
-        description: The image tag of the main build from this workflow
-        value: ${{ jobs.build.outputs.tag }}
 
 jobs:
   build:
     runs-on: self-hosted
-    env:
-      DOCKER_BUILDKIT: 1
-
-    outputs:
-      tag: ${{ steps.build.outputs.tag }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout with submodules
+        uses: actions/checkout@v2
         with:
-          submodules: true
+          submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
       - name: Configure AWS credentials
@@ -50,31 +42,38 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and test the container
-        id: build
+      - name: Create docker builder
+        id: create-builder
         run: |
-          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
-          COMMIT_TAG=$REPO:${GITHUB_SHA}
-          docker build -f ${{ inputs.dockerfile }} --build-arg GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }} -t $COMMIT_TAG .
-          echo "::set-output name=tag::$COMMIT_TAG"
+          BUILDER_NAME=github-actions-builder-${GITHUB_SHA}-${{ github.run_number }}
+          docker buildx create --use --name $BUILDER_NAME
+          echo "::set-output name=name::$BUILDER_NAME"
 
-      - name: Tag and push image to Amazon ECR
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
-
+      - name: Build and push image
         run: |
+          DOCKER_BUILDKIT=1
           REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
           BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
           BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
 
+          # Work out all of the tags we will use
           COMMIT_TAG=$REPO:${GITHUB_SHA}
           BUILD_TAG=$REPO:build-${{ github.run_number }}
           BUILD_BRANCH_TAG=$REPO:${BRANCH}-build-${{ github.run_number }}
           COMMIT_TAG=$REPO:${GITHUB_SHA}
           COMMIT_BRANCH_TAG=$REPO:${BRANCH}-${GITHUB_SHA}
+          TAG_ARG="--tag $COMMIT_TAG --tag $BUILD_TAG --tag $BUILD_BRANCH_TAG --tag $COMMIT_BRANCH_TAG"
 
-          for tag in $BUILD_TAG $BUILD_BRANCH_TAG $COMMIT_TAG $COMMIT_BRANCH_TAG; do
-            docker tag $COMMIT_TAG $tag && docker push $tag
-          done
+          # Add a push arg if we are going to push
+          SHOULD_PUSH=${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+          if [ $SHOULD_PUSH = true ]; then PUSH_ARG='--push'; else PUSH_ARG=''; fi
+
+          docker buildx build --file ${{ inputs.dockerfile }} --build-arg GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }} $TAG_ARG $PUSH_ARG .
+
+      - name: Teardown docker builder
+        if: always()
+        run: |
+          docker buildx rm ${{ steps.create-builder.outputs.name }} || true
 
       - uses: act10ns/slack@v1
         if: always()
