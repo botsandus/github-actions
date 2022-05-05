@@ -1,0 +1,85 @@
+# This workflow will build a Docker container, including running any tests which
+# are part of the build process.
+#
+# If the workflow is triggered as part of an explicit dispatch, pull request, or
+# push to master/main then the image will also be pushed to ECR.
+
+name: Container build
+
+on:
+  workflow_call:
+    inputs:
+      ecrRepo:
+        required: true
+        type: string
+        description: The path of the ECR repository to use
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+        description: The path of the Dockerfile to use, relative to the root
+    outputs:
+      tag:
+        description: The image tag of the main build from this workflow
+        value: ${{ jobs.build.outputs.tag }}
+
+jobs:
+  build:
+    runs-on: self-hosted
+    env:
+      DOCKER_BUILDKIT: 1
+
+    outputs:
+      tag: ${{ steps.build.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.GIT_CHECKOUT_PAT }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+          mask-aws-account-id: false
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and test the container
+        id: build
+        run: |
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
+          COMMIT_TAG=$REPO:${GITHUB_SHA}
+          docker build -f ${{ inputs.dockerfile }} --build-arg GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }} -t $COMMIT_TAG .
+          echo "::set-output name=tag::$COMMIT_TAG"
+
+      - name: Tag and push image to Amazon ECR
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+
+        run: |
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
+          BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+
+          COMMIT_TAG=$REPO:${GITHUB_SHA}
+          BUILD_TAG=$REPO:build-${{ github.run_number }}
+          BUILD_BRANCH_TAG=$REPO:${BRANCH}-build-${{ github.run_number }}
+          COMMIT_TAG=$REPO:${GITHUB_SHA}
+          COMMIT_BRANCH_TAG=$REPO:${BRANCH}-${GITHUB_SHA}
+
+          for tag in $BUILD_TAG $BUILD_BRANCH_TAG $COMMIT_TAG $COMMIT_BRANCH_TAG; do
+            docker tag $COMMIT_TAG $tag && docker push $tag
+          done
+
+      - uses: act10ns/slack@v1
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          status:  ${{ job.status }}
+          channel: '#notifications'
