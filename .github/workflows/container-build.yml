@@ -18,12 +18,22 @@ on:
         type: string
         default: Dockerfile
         description: The path of the Dockerfile to use, relative to the root
+    outputs:
+      tag:
+        description: The image tag of the main build from this workflow
+        value: ${{ jobs.build.outputs.tag }}
 
 jobs:
   build:
     runs-on: self-hosted
 
+    outputs:
+      tag: ${{ steps.build.outputs.imageid }}
+
     steps:
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v1
+
       - name: Checkout with submodules
         uses: actions/checkout@v2
         with:
@@ -42,38 +52,38 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Create docker builder
-        id: create-builder
+      - name: Calculate tags
+        id: tag-calculator
         run: |
-          BUILDER_NAME=github-actions-builder-${GITHUB_SHA}-${{ github.run_number }}
-          docker buildx create --use --name $BUILDER_NAME
-          echo "::set-output name=name::$BUILDER_NAME"
-
-      - name: Build and push image
-        run: |
-          DOCKER_BUILDKIT=1
           REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
           BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
           BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
 
-          # Work out all of the tags we will use
           COMMIT_TAG=$REPO:${GITHUB_SHA}
           BUILD_TAG=$REPO:build-${{ github.run_number }}
           BUILD_BRANCH_TAG=$REPO:${BRANCH}-build-${{ github.run_number }}
           COMMIT_TAG=$REPO:${GITHUB_SHA}
           COMMIT_BRANCH_TAG=$REPO:${BRANCH}-${GITHUB_SHA}
-          TAG_ARG="--tag $COMMIT_TAG --tag $BUILD_TAG --tag $BUILD_BRANCH_TAG --tag $COMMIT_BRANCH_TAG"
 
-          # Add a push arg if we are going to push
-          SHOULD_PUSH=${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
-          if [ $SHOULD_PUSH = true ]; then PUSH_ARG='--push'; else PUSH_ARG=''; fi
+          echo "::set-output name=tags::$COMMIT_TAG,$BUILD_TAG,$BUILD_BRANCH_TAG,$COMMIT_BRANCH_TAG"
 
-          docker buildx build --file ${{ inputs.dockerfile }} --build-arg GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }} $TAG_ARG $PUSH_ARG .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Teardown docker builder
-        if: always()
-        run: |
-          docker buildx rm ${{ steps.create-builder.outputs.name }} || true
+      - name: Build and push the container
+        id: build
+        uses: docker/build-push-action@v3
+        env:
+          DOCKER_BUILDKIT: 1
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+          build-args: |
+            GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }}
+          tags: ${{ steps.tag-calculator.outputs.tags }}
+          cache-from: type=gha,mode=max,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }}
+          cache-to: type=gha,mode=max,url=${{ env.ACTIONS_CACHE_URL }},token=${{ env.ACTIONS_RUNTIME_TOKEN }}
 
       - uses: act10ns/slack@v1
         if: always()
