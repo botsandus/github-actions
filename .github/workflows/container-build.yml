@@ -18,15 +18,15 @@ on:
         type: string
         default: Dockerfile
         description: The path of the Dockerfile to use, relative to the root
-      runs-on:
+      runner:
         required: false
         type: string
-        default: self-hosted
-        description: Runner specification for this action
+        default: '["self-hosted", "X64"]'
+        description: A JSON payload describing the runner to use
 
 jobs:
   build:
-    runs-on: ${{ inputs.runs-on }}
+    runs-on: ${{ fromJSON(inputs.runner) }}
 
     steps:
       - name: Expose GitHub Runtime
