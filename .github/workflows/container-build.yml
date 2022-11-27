@@ -33,7 +33,7 @@ on:
       feature_branch:
         required: true
         type: string
-        default: 'something'
+        default: ''
         description: This branch is the one that needs to be checked out,
           and that helps iterating through `src` to checkout related branches
 
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: botsandus/auto # should make it work on auto and any feature repo TODO(marcus): maybe make variable to decide on integration repo (could differ between projects)
-          # ref: refs/heads/release # TODO(marcus): pipe in the branch
+          ref: ${{ inputs.feature_branch }}  # TODO(marcus): this one should pass the feature branch or should be empty (if running on auto) 
           submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
@@ -69,18 +69,17 @@ jobs:
       - name: Calculate tags
         id: tag-calculator
         run: |
+          echo "::set-output name=tags::tmp-feature-branch"        
       # TODO(marcus): temp deactivate tagging while developing 
-      #    REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
-      #    BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-      #    BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+      #   REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
+      #   BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+      #   BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
 
-      #    BUILD_TAG=$REPO:build-${{ github.run_number }}
-      #    BUILD_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${BRANCH}
-      #    BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}
-      #    BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}-${BRANCH}
-
-      #    echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
-           echo "::set-output name=tags::tmp-feature-branch"
+      #   BUILD_TAG=$REPO:build-${{ github.run_number }}
+      #   BUILD_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${BRANCH}
+      #   BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}
+      #   BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}-${BRANCH}
+      #   echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
