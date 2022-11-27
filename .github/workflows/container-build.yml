@@ -79,8 +79,8 @@ jobs:
           BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
           
           if [[ -z ${{ inputs.featureName }} ]]; then
-            TRIGGERINGREPO=${${{ inputs.triggeringRepo }}//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
-            BUILD_TAG=$REPO:build-${{ github.run_number }}-${TRIGGERINGREPO}-${BRANCH}
+            FEATUREBRANCH=${${{ inputs.featureName }}//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+            BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${FEATUREBRANCH}
             echo "::set-output name=tags::$BUILD_TAG"
           else
             BUILD_TAG=$REPO:build-${{ github.run_number }}
