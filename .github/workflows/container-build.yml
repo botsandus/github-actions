@@ -31,6 +31,11 @@ on:
         default: '' # for build on default branch + default *.repos
         description: This branch is the one that needs to be checked out,
           and that helps iterating through `src` to checkout related branches
+      integrationRepo:
+        required: false
+        type: string
+        default: ''
+        description: The repository that should be checked out to run the CI          
       triggeringRepo:
         required: false
         type: string
@@ -49,9 +54,7 @@ jobs:
       - name: Checkout with submodules
         uses: actions/checkout@v2
         with:
-          # should make it work on auto and any feature repo TODO(marcus): maybe make variable to decide on integration repo (could differ between projects)
-          repository: botsandus/auto
-          # TODO(marcus): this one should pass the feature branch or should be empty (if running on auto)
+          repository: ${{ inputs.integrationRepo }}
           ref: ${{ inputs.featureName }}
           submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
