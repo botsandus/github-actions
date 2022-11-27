@@ -25,17 +25,17 @@ on:
         description: A JSON payload describing the runner to use
       # below variables need setting if a feature repo wants to run the CI
       # and checkout one ore more feature branches
-      is_feature:
-        required: true
-        type: boolean
-        default: false
-        description: A bool whether this action works on a feature repository
-      feature_branch:
-        required: true
+      featureName:
+        required: false
         type: string
-        default: ''
+        default: '' # for build on default branch + default *.repos
         description: This branch is the one that needs to be checked out,
           and that helps iterating through `src` to checkout related branches
+      triggeringRepo:
+        required: false
+        type: string
+        default: ''
+        description: The repository that triggered the workflow to better tag the image
 
 
 jobs:
@@ -49,8 +49,10 @@ jobs:
       - name: Checkout with submodules
         uses: actions/checkout@v2
         with:
-          repository: botsandus/auto # should make it work on auto and any feature repo TODO(marcus): maybe make variable to decide on integration repo (could differ between projects)
-          ref: ${{ inputs.feature_branch }}  # TODO(marcus): this one should pass the feature branch or should be empty (if running on auto) 
+          # should make it work on auto and any feature repo TODO(marcus): maybe make variable to decide on integration repo (could differ between projects)
+          repository: botsandus/auto
+          # TODO(marcus): this one should pass the feature branch or should be empty (if running on auto)
+          ref: ${{ inputs.featureName }}
           submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
@@ -69,17 +71,21 @@ jobs:
       - name: Calculate tags
         id: tag-calculator
         run: |
-          echo "::set-output name=tags::tmp-feature-branch"        
-      # TODO(marcus): temp deactivate tagging while developing 
-      #   REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
-      #   BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-      #   BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
-
-      #   BUILD_TAG=$REPO:build-${{ github.run_number }}
-      #   BUILD_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${BRANCH}
-      #   BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}
-      #   BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}-${BRANCH}
-      #   echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
+          BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
+          BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+          
+          if [[ -z ${{ inputs.featureName }} ]]; then
+            TRIGGERINGREPO=${${{ inputs.triggeringRepo }}//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+            BUILD_TAG=$REPO:build-${{ github.run_number }}-${TRIGGERINGREPO}-${BRANCH}
+            echo "::set-output name=tags::$BUILD_TAG"
+          else
+            BUILD_TAG=$REPO:build-${{ github.run_number }}
+            BUILD_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${BRANCH}
+            BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}
+            BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}-${BRANCH}
+            echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -96,8 +102,7 @@ jobs:
           build-args: |
             GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }}
             BUILD_NUMBER=${{ github.run_number }}
-            IS_FEATURE=${{ inputs.is_feature }}
-            FEATURE_BRANCH=${{ inputs.feature_branch }}
+            FEATURE_NAME=${{ inputs.featureName }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
 
       #- uses: act10ns/slack@v1
