@@ -107,7 +107,9 @@ jobs:
             BUILD_NUMBER=${{ github.run_number }}
             FEATURE_NAME=${{ inputs.featureName }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
-
+          # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache	
+          # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
+          
       #- uses: act10ns/slack@v1
       #  if: always()
       #  env:
