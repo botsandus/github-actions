@@ -110,10 +110,10 @@ jobs:
           # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache	
           # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
           
-      #- uses: act10ns/slack@v1
-      #  if: always()
-      #  env:
-      #    SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      #  with:
-      #    status:  ${{ job.status }}
-      #    channel: '#notifications'
+      - uses: act10ns/slack@v1
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          status:  ${{ job.status }}
+          channel: '#notifications'
