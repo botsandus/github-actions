@@ -10,7 +10,7 @@ on:
   workflow_call:
     inputs:
       ecrRepo:
-        required: true
+        required: false
         type: string
         default: 'botsandus/arri/auto'
         description: The path of the ECR repository to use
