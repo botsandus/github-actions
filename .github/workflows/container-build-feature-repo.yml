@@ -55,7 +55,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: ${{ inputs.integrationRepo }}
-          ref: ${{ inputs.featureName }}
           submodules: recursive
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
