@@ -12,11 +12,12 @@ on:
       ecrRepo:
         required: true
         type: string
+        default: 'botsandus/arri/auto'
         description: The path of the ECR repository to use
       dockerfile:
         required: false
         type: string
-        default: Dockerfile
+        default: '.balena/Dockerfile'
         description: The path of the Dockerfile to use, relative to the root
       runner:
         required: false
@@ -26,20 +27,20 @@ on:
       # below variables need setting if a feature repo wants to run the CI
       # and checkout one ore more feature branches
       featureName:
-        required: true
+        required: false
         type: string
-        default: '' # for build on default branch + default *.repos
+        default: ${{ github.head_ref || github.ref_name }} # for build on default branch + default *.repos
         description: This branch is the one that needs to be checked out,
           and that helps iterating through `src` to checkout related branches
       integrationRepo:
-        required: true
+        required: false
         type: string
-        default: ''
+        default: 'botsandus/auto'
         description: The repository that should be checked out to run the CI          
       triggeringRepo:
-        required: true
+        required: false
         type: string
-        default: ''
+        default: ${{ github.event.repository.name }}
         description: The repository that triggered the workflow to better tag the image
 
 
