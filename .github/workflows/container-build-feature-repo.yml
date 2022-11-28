@@ -74,8 +74,12 @@ jobs:
       - name: Calculate tags
         id: tag-calculator
         run: |
-          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}          
-          BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${{ inputs.featureName }}
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}  
+          BRANCH=${{ inputs.featureName }}
+          BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+
+          BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${BRANCH}
+
           echo "::set-output name=tags::$BUILD_TAG"
 
       - name: Set up Docker Buildx
