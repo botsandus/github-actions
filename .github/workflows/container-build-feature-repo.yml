@@ -1,0 +1,111 @@
+# This workflow will build a Docker container, including running any tests which
+# are part of the build process.
+#
+# If the workflow is triggered as part of an explicit dispatch, pull request, or
+# push to master/main then the image will also be pushed to ECR.
+
+name: Container build
+
+on:
+  workflow_call:
+    inputs:
+      ecrRepo:
+        required: true
+        type: string
+        description: The path of the ECR repository to use
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+        description: The path of the Dockerfile to use, relative to the root
+      runner:
+        required: false
+        type: string
+        default: '["self-hosted", "X64"]'
+        description: A JSON payload describing the runner to use
+      # below variables need setting if a feature repo wants to run the CI
+      # and checkout one ore more feature branches
+      featureName:
+        required: true
+        type: string
+        default: '' # for build on default branch + default *.repos
+        description: This branch is the one that needs to be checked out,
+          and that helps iterating through `src` to checkout related branches
+      integrationRepo:
+        required: true
+        type: string
+        default: ''
+        description: The repository that should be checked out to run the CI          
+      triggeringRepo:
+        required: true
+        type: string
+        default: ''
+        description: The repository that triggered the workflow to better tag the image
+
+
+jobs:
+  build:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+
+    steps:
+      - name: Expose GitHub Runtime
+        uses: crazy-max/ghaction-github-runtime@v1
+
+      - name: Checkout with submodules
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.integrationRepo }}
+          ref: ${{ inputs.featureName }}
+          submodules: recursive
+          token: ${{ secrets.GIT_CHECKOUT_PAT }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+          mask-aws-account-id: false
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Calculate tags
+        id: tag-calculator
+        run: |
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}  
+          BRANCH=${{ inputs.featureName }}
+          BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
+
+          BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${BRANCH}
+
+          echo "::set-output name=tags::$BUILD_TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push the container
+        id: build
+        uses: docker/build-push-action@v3
+        env:
+          DOCKER_BUILDKIT: 1
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          push: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+          build-args: |
+            GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }}
+            BUILD_NUMBER=${{ github.run_number }}
+            FEATURE_NAME=${{ inputs.featureName }}
+          tags: ${{ steps.tag-calculator.outputs.tags }}
+          # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache	
+          # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
+          
+      - uses: act10ns/slack@v1
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          status:  ${{ job.status }}
+          channel: '#autonomy-notifications'
