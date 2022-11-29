@@ -12,7 +12,7 @@ on:
       ecrRepo:
         required: false
         type: string
-        default: 'botsandus/arri/auto'
+        default: 'botsandus/arri/arri-ros'
         description: The path of the ECR repository to use
       dockerfile:
         required: false
