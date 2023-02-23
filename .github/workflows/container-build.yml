@@ -28,6 +28,10 @@ jobs:
   build:
     runs-on: ${{ fromJSON(inputs.runner) }}
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+
     steps:
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v1
