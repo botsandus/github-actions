@@ -22,7 +22,7 @@ on:
       runner:
         required: false
         type: string
-        default: '["self-hosted", "X64"]'
+        default: '["ubuntu-latest"]'
         description: A JSON payload describing the runner to use
       # below variables need setting if a feature repo wants to run the CI
       # and checkout one ore more feature branches
@@ -36,7 +36,7 @@ on:
         required: false
         type: string
         default: 'botsandus/auto'
-        description: The repository that should be checked out to run the CI          
+        description: The repository that should be checked out to run the CI
       triggeringRepo:
         required: false
         type: string
@@ -74,7 +74,7 @@ jobs:
       - name: Calculate tags
         id: tag-calculator
         run: |
-          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}  
+          REPO=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}
           BRANCH=${{ inputs.featureName }}
           BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
 
@@ -100,9 +100,9 @@ jobs:
             FEATURE_NAME=${{ inputs.featureName }}
             TRIGGERING_REPO=${{ inputs.triggeringRepo }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
-          # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache	
+          # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache
           # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
-          
+
       - uses: act10ns/slack@v1
         if: always()
         env:
