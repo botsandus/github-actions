@@ -23,7 +23,7 @@ on:
         required: false
         type: string
         default: '["ubuntu-latest"]'
-        description: A JSON payload describing the runner to use
+        description: A JSON payload describing the runner to use. Currently ignored because we use an AWS runner.
       # below variables need setting if a feature repo wants to run the CI
       # and checkout one ore more feature branches
       featureName:
@@ -45,8 +45,37 @@ on:
 
 
 jobs:
+  start-runner:
+    name: Start build runner on EC2
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      - name: Start EC2 runner
+        id: start-runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: start
+          github-token: ${{ secrets.GIT_CHECKOUT_PAT }}
+          ec2-image-id: ami-05812e184667c743d
+          ec2-instance-type: c5.4xlarge
+          subnet-id: subnet-0e27677c93c0f2de5
+          security-group-id: sg-0e93c4983459846f8
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "ec2-auto-github-runner"}
+            ]
+
   build:
-    runs-on: ${{ fromJSON(inputs.runner) }}
+    needs: start-runner
+    runs-on: ${{ needs.start-runner.outputs.label }}
 
     steps:
       - name: Expose GitHub Runtime
@@ -102,6 +131,28 @@ jobs:
           tags: ${{ steps.tag-calculator.outputs.tags }}
           # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache
           # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
+
+  stop-runner:
+    name: Stop build runner on EC2
+    needs:
+      - start-runner # This is required so that we can access the output
+      - build
+    runs-on: ubuntu-latest
+    if: always() # Always stop the runner even if jobs failed
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ECR_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@v2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GIT_CHECKOUT_PAT }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
 
       - uses: act10ns/slack@v1
         if: always()
