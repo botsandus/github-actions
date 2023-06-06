@@ -67,13 +67,12 @@ jobs:
           BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}
           BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${GITHUB_SHA}-${BRANCH}
 
-          echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
+          echo "tags=$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG" >> $GITHUB_OUTPUT
 
       - name: Get git tag for build
         id: git-tag
         run: |
-          echo "Using git-tag $(git describe --tags || echo '')"
-          echo "::set-output name=git-tag::$(git describe --tags || echo '')"
+          echo "git-tag=$(git describe --tags || echo '')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
