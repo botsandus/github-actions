@@ -71,7 +71,8 @@ jobs:
       - name: Get git tag for build
         id: git-tag
         run: |
-          echo "::set-output name=git-tag::$(git describe --tags 2>/dev/null || echo '')"
+          echo "Using git-tag $(git describe --tags || echo '')"
+          echo "::set-output name=git-tag::$(git describe --tags || echo '')"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
