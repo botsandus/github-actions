@@ -65,7 +65,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.GIT_CHECKOUT_PAT }}
           ec2-image-id: ami-05812e184667c743d
-          ec2-instance-type: c5.4xlarge
+          ec2-instance-type: m6a.4xlarge
           subnet-id: subnet-0e27677c93c0f2de5
           security-group-id: sg-0e93c4983459846f8
           aws-resource-tags: >
