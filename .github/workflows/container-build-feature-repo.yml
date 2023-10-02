@@ -43,10 +43,31 @@ on:
         default: ${{ github.event.repository.name }}
         description: The repository that triggered the workflow to better tag the image
 
-
 jobs:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10" # same as Ubuntu22.04
+
+      - name: Setup Python ENV
+        run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+
+      - name: Setup pre-commit cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.0
+
   start-runner:
     name: Start build runner on EC2
+    needs: style
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-runner.outputs.label }}
