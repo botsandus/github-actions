@@ -65,7 +65,7 @@ jobs:
       - name: check again
         run: which ament_xmllint || true
       - name: run kaka
-        run: ament_xmllint .
+        run: source /opt/ros/iron/setup.bash && ament_xmllint .
         shell: bash
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.0
