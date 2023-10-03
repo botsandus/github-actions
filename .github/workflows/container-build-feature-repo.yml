@@ -53,6 +53,7 @@ jobs:
       - id: get-user
         run: echo "::set-output name=containerUser::`id -u`:`id -g`"
   style:
+    needs: configure
     runs-on: ubuntu-latest
     container:
       image: ros:iron-ros-base
