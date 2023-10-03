@@ -56,8 +56,10 @@ jobs:
         run: pwd && ls -lah
       - name: chek lint
         run: which ament_xmllint || true
+        shell: bash
       - name: source
         run: source /opt/ros/iron/setup.bash || true
+        shell: bash
       - name: check again
         run: which ament_xmllint || true
       - name: Run pre-commit
