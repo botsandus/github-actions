@@ -51,8 +51,8 @@ jobs:
       options: --user 1001:127 # TODO: Fix this crap
     steps:
       - uses: actions/checkout@v3
-      - name: self test action
-        uses: ./pre-commit.yml
+      - name: Run pre-commit
+        uses: .github/actions/pre-commit.yml
 
   start-runner:
     name: Start build runner on EC2
