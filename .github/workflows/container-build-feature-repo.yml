@@ -50,6 +50,9 @@ jobs:
       image: ros:iron-ros-base
       options: --user root
     steps:
+      - name: Chown user
+        run: |
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
