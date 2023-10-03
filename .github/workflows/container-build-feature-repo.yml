@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ros:iron-ros-base
-      options: --user 1000
+      options: --user root
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
