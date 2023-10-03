@@ -49,16 +49,7 @@ jobs:
     container: ros:iron-ros-base
     steps:
       - uses: actions/checkout@v3
-
-      - name: Setup Python ENV
-        run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-
-      - name: Setup pre-commit cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
-
+      - uses: actions/setup-python@v3
       - name: Run pre-commit
         uses: pre-commit/action@v3.0.0
 
