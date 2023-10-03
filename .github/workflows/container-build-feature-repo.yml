@@ -46,16 +46,10 @@ on:
 jobs:
   style:
     runs-on: ubuntu-latest
+    container: ros:iron-ros-base
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install linters
-        run: sudo apt-get install -y libxml2-utils uncrustify black
-
-      - name: Install Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10" # same as Ubuntu22.04
       - name: Setup Python ENV
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
 
