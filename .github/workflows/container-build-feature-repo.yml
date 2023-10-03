@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run pre-commit
-        uses: .github/actions/pre-commit.yml
+        uses: .github/actions/pre-commit-action/action.yml
 
   start-runner:
     name: Start build runner on EC2
