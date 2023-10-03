@@ -47,7 +47,7 @@ jobs:
   style:
     runs-on: ubuntu-latest
     container:
-      image: ros:iron-ros-bas
+      image: ros:iron-ros-base
       options: --user root
     steps:
       - uses: actions/checkout@v3
