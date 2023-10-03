@@ -44,8 +44,19 @@ on:
         description: The repository that triggered the workflow to better tag the image
 
 jobs:
+  configure:
+    runs-on: ubuntu-latest
+    outputs:
+      containerUser: ${{ steps.get-user.outputs.containerUser }}
+    
+    steps:
+      - id: get-user
+        run: echo "::set-output name=containerUser::`id -u`:`id -g`"
   style:
     runs-on: ubuntu-latest
+    container:
+      image: ros:iron-ros-base
+      options: --user ${{ needs.configure.outputs.containerUser }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
