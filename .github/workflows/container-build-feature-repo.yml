@@ -124,10 +124,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Run pre-commit
-        id: pre-commit
-        uses: pre-commit/action@v3.0.0
-
       - name: Calculate tags
         id: tag-calculator
         run: |
