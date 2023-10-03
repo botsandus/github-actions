@@ -51,24 +51,8 @@ jobs:
       options: --user 1001:127 # TODO: Fix this crap
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Debug
-        run: pwd && ls -lah
-      - name: chek lint
-        run: which ament_xmllint || true
-        shell: bash
-      - name: source
-        run: source /opt/ros/iron/setup.bash || true
-        shell: bash
-      - name: check again
-        run: which ament_xmllint || true
-      - name: run kaka
-        run: source /opt/ros/iron/setup.bash && ament_xmllint .
-        shell: bash
-      - name: Run pre-commit
-        uses: pre-commit/action@v3.0.0
+      - name: self test action
+        uses: ./pre-commit.yml
 
   start-runner:
     name: Start build runner on EC2
