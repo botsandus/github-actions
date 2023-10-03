@@ -51,6 +51,9 @@ jobs:
       options: --user 1001:127 # TODO: Fix this crap
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Run pre-commit
         uses: botsandus/github-actions/.github/actions/pre-commit-action@AUTO-1201_pre_commit_hook
 
