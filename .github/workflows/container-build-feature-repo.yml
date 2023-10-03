@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Run pre-commit
-        uses: ./.github/actions/pre-commit-action/
+        uses: botsandus/github-actions/.github/actions/pre-commit-action@AUTO-1201_pre_commit_hook
 
   start-runner:
     name: Start build runner on EC2
