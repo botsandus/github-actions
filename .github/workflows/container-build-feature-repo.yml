@@ -44,25 +44,14 @@ on:
         description: The repository that triggered the workflow to better tag the image
 
 jobs:
-  configure:
-    runs-on: ubuntu-latest
-    outputs:
-      containerUser: ${{ steps.get-user.outputs.containerUser }}
-
-    steps:
-      - id: get-user
-        run: echo "::set-output name=containerUser::`id -u`:`id -g`" && id -u && id -g
   style:
-    needs: configure
     runs-on: ubuntu-latest
     container:
       image: ros:iron-ros-base
-      options: --user ${{ needs.configure.outputs.containerUser }}
+      options: --user 1001:127 # TODO: Fix this crap
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
       - name: Debug
         run: |
           pwd && ls -lah
