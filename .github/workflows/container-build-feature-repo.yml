@@ -12,12 +12,12 @@ on:
       ecrRepo:
         required: false
         type: string
-        default: "botsandus/arri/arri-ros"
+        default: 'botsandus/arri/arri-ros'
         description: The path of the ECR repository to use
       dockerfile:
         required: false
         type: string
-        default: ".balena/Dockerfile"
+        default: '.balena/Dockerfile'
         description: The path of the Dockerfile to use, relative to the root
       runner:
         required: false
@@ -35,7 +35,7 @@ on:
       integrationRepo:
         required: false
         type: string
-        default: "botsandus/auto"
+        default: 'botsandus/auto'
         description: The repository that should be checked out to run the CI
       triggeringRepo:
         required: false
@@ -172,5 +172,5 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         with:
-          status: ${{ job.status }}
-          channel: "#autonomy-notifications"
+          status:  ${{ job.status }}
+          channel: '#autonomy-notifications'
