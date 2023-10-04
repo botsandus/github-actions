@@ -56,7 +56,7 @@ jobs:
           files: "./.pre-commit-config.yaml"
       - uses: actions/setup-python@v4
         with: { python-version: "3.10" }
-      - uses: botsandus/ament_lint_pre_commit@v0
+      - uses: botsandus/ament_lint_pre_commit
         if: steps.check_files.outputs.files_exists
 
   start-runner:
