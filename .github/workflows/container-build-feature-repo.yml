@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: andstor/file-existence-action@v2
-        if: pre_commit_config
+        id: pre_commit_config
         with:
           files: "./.pre-commit-config.yaml"
       - uses: actions/setup-python@v4
