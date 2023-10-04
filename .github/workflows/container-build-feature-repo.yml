@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: "3.10"
       - name: Run pre-commit
-        uses: botsandus/ament_lint_hooks@v0.05
+        uses: botsandus/ament_lint_hooks@v0.0.5
 
   start-runner:
     name: Start build runner on EC2
