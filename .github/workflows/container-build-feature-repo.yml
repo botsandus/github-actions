@@ -53,11 +53,11 @@ jobs:
       - uses: actions/checkout@v3
       - uses: andstor/file-existence-action@v2
         with:
-          files: ".pre-commit-config.yaml"
+          files: "./.pre-commit-config.yaml"
       - uses: actions/setup-python@v4
         with: { python-version: "3.10" }
-      - uses: botsandus/ament_lint_pre_commit@v0.0.6
-        if: steps.check_files.outputs.files_exists == 'true'
+      - uses: botsandus/ament_lint_pre_commit@v0
+        if: steps.check_files.outputs.files_exists
 
   start-runner:
     name: Start build runner on EC2
