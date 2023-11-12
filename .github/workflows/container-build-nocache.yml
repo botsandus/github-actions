@@ -77,10 +77,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.1
+      - name: ccache cache files
+        uses: actions/cache@v3
         with:
-          max-size: 2GB
+          path: .ccache
+          key: ccache-${GITHUB_SHA}
+          restore-keys: |
+            ccache-	
 
       - name: Build and push the container
         id: build
