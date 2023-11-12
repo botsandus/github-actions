@@ -80,7 +80,7 @@ jobs:
       - name: ccache cache files
         uses: actions/cache@v3
         with:
-          path: .ccache
+          path: /root/.cache/ccache
           key: ccache-${GITHUB_SHA}
           restore-keys: |
             ccache-	
