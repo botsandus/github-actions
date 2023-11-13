@@ -80,10 +80,14 @@ jobs:
       - name: Cache setup for ccache
         uses: actions/cache@v3
         with:
-          path: /root/.cache/ccache
+          path: root-cache-ccache
           key: ccache-build-${{ github.run_number }}-${{ github.sha }}
-          restore-keys: |
-            ccache-	
+
+      - name: Inject ccache into docker
+        uses: reproducible-containers/buildkit-cache-dance@v2.1.3
+        with:
+          cache-source: root-cache-ccache
+          cache-target: /root/.cache/ccache
 
       - name: Build and push the container
         id: build
@@ -99,13 +103,7 @@ jobs:
             BUILD_NUMBER=${{ github.run_number }}
             GIT_TAG=${{ steps.git-tag.outputs.git-tag }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
-          cache-from: type=local,src=/root/.cache/ccache
-          cache-to: type=local,mode=max,dest=/root/.cache/ccache-new
-
-      - name: Move cache
-        run: |
-          rm -rf /root/.cache/ccache
-          mv /root/.cache/ccache-new /root/.cache/ccache
+          cache-to: type=gha,mode=max
 
       - uses: act10ns/slack@v1
         if: always()
