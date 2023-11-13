@@ -99,6 +99,13 @@ jobs:
             BUILD_NUMBER=${{ github.run_number }}
             GIT_TAG=${{ steps.git-tag.outputs.git-tag }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
+          cache-from: type=local,src=/root/.cache/ccache
+          cache-to: type=local,mode=max,dest=/root/.cache/ccache-new
+
+      - name: Move cache
+        run: |
+          rm -rf /root/.cache/ccache
+          mv /root/.cache/ccache-new /root/.cache/ccache
 
       - uses: act10ns/slack@v1
         if: always()
