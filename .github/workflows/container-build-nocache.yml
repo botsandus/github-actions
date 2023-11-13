@@ -81,7 +81,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /root/.cache/ccache
-          key: ccache-build-${{ github.run_number }}
+          key: ccache-build-${{ github.run_number }}-${{ github.sha }}
           restore-keys: |
             ccache-	
 
