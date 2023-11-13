@@ -81,7 +81,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: root-cache-ccache
-          key: ccache-build-${{ github.run_number }}-${{ github.sha }}
+          key: ccache-build-${{ hashFiles('auto/arri.repos') }}
 
       - name: Inject ccache into docker
         uses: reproducible-containers/buildkit-cache-dance@v2.1.3
