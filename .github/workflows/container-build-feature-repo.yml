@@ -76,7 +76,7 @@ jobs:
           aws-region: eu-west-2
       - name: Start EC2 runner
         id: start-runner
-        uses: machulav/ec2-github-runner@v2
+        uses: botsandus/ec2-github-runner@main
         with:
           mode: start
           github-token: ${{ secrets.GIT_CHECKOUT_PAT }}
@@ -88,6 +88,8 @@ jobs:
             [
               {"Key": "Name", "Value": "ec2-auto-github-runner"}
             ]
+          additional-params: >
+            { "BlockDeviceMappings": [{ "DeviceName": "/dev/sda1", "Ebs": { "VolumeSize": 64 } }] }
 
   build:
     needs: start-runner
