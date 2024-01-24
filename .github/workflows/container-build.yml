@@ -25,7 +25,7 @@ on:
         description: A JSON payload describing the runner to use
 
 jobs:
-  style:
+  pre-commit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -39,7 +39,7 @@ jobs:
         uses: pre-commit/action@v3.0.0
 
   build:
-    needs: style
+    needs: pre-commit
     runs-on: ${{ fromJSON(inputs.runner) }}
 
     concurrency:

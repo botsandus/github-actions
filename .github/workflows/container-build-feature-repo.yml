@@ -44,7 +44,7 @@ on:
         description: The repository that triggered the workflow to better tag the image
 
 jobs:
-  pre-commit:
+  style:
     runs-on: ubuntu-latest
     container:
       image: ros:iron-ros-base
@@ -62,7 +62,7 @@ jobs:
 
   start-runner:
     name: Start build runner on EC2
-    needs: pre-commit
+    needs: style
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-runner.outputs.label }}
