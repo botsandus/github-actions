@@ -104,6 +104,7 @@ jobs:
         with:
           repository: ${{ inputs.integrationRepo }}
           submodules: recursive
+          fetch-depth: 0
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
       - name: Configure AWS credentials
