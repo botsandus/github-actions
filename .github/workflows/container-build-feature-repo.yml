@@ -165,7 +165,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.ECR_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
       - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@v2
+        uses: botsandus/ec2-github-runner@main
         with:
           mode: stop
           github-token: ${{ secrets.GIT_CHECKOUT_PAT }}
