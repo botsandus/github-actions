@@ -23,6 +23,16 @@ on:
         type: string
         default: '["ubuntu-latest"]'
         description: A JSON payload describing the runner to use
+      ssh-debug:
+        required: false
+        type: boolean
+        default: false
+        description: Run tmate SSH server with the public SSH key for the GitHub user initating the job
+      ssh-timeout:
+        required: false
+        type: number
+        default: 10
+        description: Number of minutes to wait for SSH connection at end of workflow before timing out
 
 jobs:
   pre-commit:
@@ -47,6 +57,14 @@ jobs:
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
+      - name: SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
+        if: ${{inputs.ssh-debug}}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: ${{inputs.ssh-timeout}}
+        with:
+          detached: true
+          limit-access-to-actor: true
+
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v1
 
