@@ -26,10 +26,12 @@ runs:
     - name: Show connection command
       shell: bash
       run: |
+        echo
         echo "::notice::README: SSH Connection instructions"
         echo "::notice::To connect using SSH, run the following from inside the tailnet:"
         echo "::notice::  ssh runner@github-$HOSTNAME"
         echo "::notice::Your tailscale user must be in group:developers"
+        echo
 
     - name: Wait for SSH sessions
       uses: srz-zumix/post-run-action@v1

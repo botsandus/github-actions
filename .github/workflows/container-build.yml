@@ -66,6 +66,7 @@ jobs:
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
 
       - name: Tailscale SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
+        if: ${{ inputs.ssh-debug && !cancelled() }}
         uses: botsandus/github-actions/tailscale-ssh@TECH-149-Add-SSH-debug
         with:
           ssh-timeout: ${{ inputs.ssh-timeout }}
