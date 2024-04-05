@@ -54,10 +54,10 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
-    steps:
-      - name: sleepy
-        shell: bash
-        run: sleep 10000
+        #    steps:
+        #      - name: sleepy
+        #        shell: bash
+        #        run: sleep 10000
 
       - name: Tailscale SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
         if: ${{ inputs.ssh-debug && !cancelled() }}
