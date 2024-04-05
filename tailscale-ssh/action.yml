@@ -21,7 +21,6 @@ runs:
       with:
         authkey: ${{ inputs.ts-authkey }}
         tags: tag:ci-builder
-          #        tailscaled-args: -verbose 1
         args: --ssh
     - name: Show connection command
       shell: bash
@@ -34,13 +33,15 @@ runs:
         echo
 
     - name: Wait for SSH sessions
-      post-if: '!cancelled()'
+      # This is the best option for a basb post command at the moment, however
+      # it is missing post-if: '!cancelled()', so ignores cancellation
+      # requests.  gacts/run-and-post-run was discounted because it doesn't
+      # process multi-line scripts properly.
       uses: srz-zumix/post-run-action@v1
       with:
         post-run: |
-          # This gets called with the -e option, which is inconvenient if you
-          # get impatient and kill the initial sleep or tail etc, as it aborts
-          # the whole script and your SSH is killed immediately.
+          # We don't want -e as the script should complete its logic if anything
+          # like sleep or pipe are killed to avoid killing active SSH sessions.
           set +e
           log() { echo "$(date '+%F %T') $@"; }
 
@@ -55,7 +56,7 @@ runs:
           log "Waiting $timeout minutes for SSH connections"
           sleep $(( $timeout * 60 ))
 
-          # tailscaled spawns login processes for each SSH session
+          # tailscaled spawns a login process for each SSH session
           while true; do
           log "Waiting for open sessions to close"
             ps -C login -o pid=,stime=,cmd= || break

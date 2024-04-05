@@ -55,12 +55,8 @@ jobs:
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
-        #      - name: sleepy
-        #        shell: bash
-        #        run: sleep 10000
-
       - name: Tailscale SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
-        if: ${{ inputs.ssh-debug && !cancelled() }}
+        if: ${{ inputs.ssh-debug }}
         uses: botsandus/github-actions/tailscale-ssh@TECH-149-Add-SSH-debug
         with:
           ssh-timeout: ${{ inputs.ssh-timeout }}
