@@ -1,0 +1,69 @@
+name: 'Tailscale SSH'
+description: 'Join tailnet in SSH mode for debugging'
+branding:
+  icon: terminal
+
+inputs:
+  ssh-timeout:
+    required: false
+    type: number
+    default: 10
+    description: Number of minutes to wait for SSH connection at end of workflow before timing out
+  ts-authkey:
+    required: true
+    description: Tailscale authkey
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Start tailscale
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ inputs.ts-authkey }}
+        tags: tag:ci-builder
+          #        tailscaled-args: -verbose 1
+        args: --ssh
+    - name: Show connection command
+      shell: bash
+      run: |
+        echo "::notice::README: SSH Connection instructions"
+        echo "::notice::To connect using SSH, run the following from inside the tailnet:"
+        echo "::notice::  ssh runner@github-$HOSTNAME"
+        echo "::notice::Your tailscale user must be in group:developers"
+
+    - name: Wait for SSH sessions
+      uses: srz-zumix/post-run-action@v1
+      with:
+        post-run: |
+          # This gets called with the -e option, which is inconvenient if you
+          # get impatient and kill the initial sleep or tail etc, as it aborts
+          # the whole script and your SSH is killed immediately.
+          set +e
+          log() { echo "$(date '+%F %T') $@"; }
+
+          tail -fn+0 --pid $$ /home/runner/tailscaled.log &
+
+          # Give the output that follows an imperfect chance to
+          # avoid getting lost in tail output
+          sleep 1
+
+          timout="${{inputs.ssh-timeout}}"
+          [[ -z $timeout ]] && timeout=10
+          log "Waiting $timeout minutes for SSH connections"
+          sleep $(( $timeout * 60 ))
+
+          # tailscaled spawns login processes for each SSH session
+          while true; do
+          log "Waiting for open sessions to close"
+            ps -C login -o pid=,stime=,cmd= || break
+
+            # Check every 10 seconds, report evety 5 minutes
+            for((i=0; i < (6*5-1); i++)); do
+              sleep 10
+              pgrep -x login > /dev/null || break 2
+            done
+            sleep 10
+
+          done
+
+          log "All sessions closed - exiting"

@@ -27,13 +27,11 @@ on:
         required: false
         type: boolean
         default: false
-        description: Run tmate SSH server with the public SSH key for the GitHub user initating the job
+        description: Enable SSH debugging using Tailscale
       ssh-timeout:
         required: false
         type: number
-        default: 10
         description: Number of minutes to wait for SSH connection at end of workflow before timing out
-
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -57,14 +55,6 @@ jobs:
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
-      - name: SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
-        if: ${{inputs.ssh-debug}}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: ${{inputs.ssh-timeout}}
-        with:
-          detached: true
-          limit-access-to-actor: true
-
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v1
 
@@ -74,6 +64,12 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           token: ${{ secrets.GIT_CHECKOUT_PAT }}
+
+      - name: Tailscale SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
+        uses: botsandus/github-actions/.github/workflows/tailscale-ssh@TECH-149-Add-SSH-debug
+        with:
+          ssh-timeout: ${{ inputs.ssh-timeout }}
+          ts-authkey: ${{ secrets.TAILSCALE_CI_BUILDER_KEY }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
