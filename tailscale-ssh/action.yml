@@ -34,7 +34,7 @@ runs:
         echo
 
     - name: Wait for SSH sessions
-      if: ${{ !cancelled() }}
+      post-if: ${{ !cancelled() }}
       uses: srz-zumix/post-run-action@v1
       with:
         post-run: |
