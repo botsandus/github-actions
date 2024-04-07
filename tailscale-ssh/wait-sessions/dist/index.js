@@ -32891,7 +32891,7 @@ async function tail(file) {
   }
 
   if (!core.isDebug()) {
-    core.notice("Rerun with debug logging to tail ${file}");
+    core.notice(`Rerun with debug logging to tail ${file}`);
     return;
   }
 
@@ -32963,7 +32963,7 @@ async function wait_sessions(
     now = Date.now();
 
     if (now >= next_status) {
-      log("Waiting for open sessions to close");
+      log(`Waiting for open sessions to close (${session_exe})`);
       result = check(session_exe, true);
       next_status = now + status_period;
     } else {
@@ -32992,10 +32992,11 @@ async function run() {
   if (check_period == 0) check_period = 10;
   if (status_period == 0) status_period = 5 * 60;
 
-  session_exe = "sleep";
+  //session_exe = "sleep";
   wait_minutes = 2;
   check_period = 1;
   status_period = 20;
+
   wait_sessions(
     tail_log,
     session_exe,
