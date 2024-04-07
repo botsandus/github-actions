@@ -5,13 +5,13 @@ const Tail = require("tail").Tail;
 const moment = require('moment');
 
 function log(msg) {
-	console.log(moment().format('yyyy-MM-DD HH:mm:ss'), msg)
+	core.notice(moment().format('yyyy-MM-DD HH:mm:ss ') + msg)
 }
 
 function tail(file) {
 	tail = new Tail(file, {fromBeginning: true})
-	tail.on("line", function(data) {  console.log(data); });
-	tail.on("error", function(error) { console.error(error); });
+	tail.on("line", function(data) {  core.debug(data); });
+	tail.on("error", function(error) { core.error(error); });
 }
 
 function exec(cmd, args, options) {
@@ -82,18 +82,21 @@ async function wait_sessions(tail_log, session_exe, wait_minutes, check_period, 
 }
 
 async function run() {
-	const tail_log = core.getInput('tail-log');
-	const session_exe = core.getInput('session-exe');
+	tail_log = core.getInput('tail-log');
+	session_exe = core.getInput('session-exe');
 	wait_minutes = core.getInput('wait-minutes');
 	check_period = core.getInput('check-period');
 	status_period = core.getInput('status-period');
 
+	// Setting defaults here makes it easier for nested defaults from callers, as
+	// missing inputs get propagated as empty strings or zeros.  This avoids
+	// having to set defaults all the way up the action/workflow stack.
 	if(wait_minutes == 0) wait_minutes = 10;
 	if(check_period == 0) check_period = 10;
 	if(status_period == 0) status_period = 5*60;
 
-	//wait_sessions('', 'sleep', 1/60, 1, 5);
-	wait_sessions(tail_log, session_exe, wait_mins, check_period, status_period);
+	//session_exe = 'sleep'; wait_minutes = 1/60; check_period = 1; status_period = 5;
+	wait_sessions(tail_log, session_exe, wait_minutes, check_period, status_period);
 }
 
 run();

@@ -24,5 +24,6 @@ inputs:
 
 runs:
   using: 'node20'
-  post: 'index.js'
+  main: 'main.js'
+  post: 'post.js'
   post-if: '!cancelled()'
