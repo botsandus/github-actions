@@ -9,13 +9,22 @@ function log(msg) {
 }
 
 function tail(file) {
-  tail = new Tail(file, { fromBeginning: true });
-  tail.on("line", function (data) {
-    core.debug(data);
-  });
-  tail.on("error", function (error) {
-    core.error(error);
-  });
+  if (file.length == 0) {
+    return;
+  }
+
+  try {
+    tail = new Tail(file, { fromBeginning: true });
+    tail.on("line", function (data) {
+      core.debug(data);
+    });
+    tail.on("error", function (error) {
+      core.error(error);
+    });
+  } catch (e) {
+    core.error("Failed to tail log ${file}");
+    core.error(e);
+  }
 }
 
 function exec(cmd, args, options) {
@@ -55,9 +64,7 @@ async function wait_sessions(
   check_period,
   status_period,
 ) {
-  if (tail_log.length > 0) {
-    tail("test.log");
-  }
+  tail(tail_log);
 
   // Give the output that follows an imperfect chance
   // to avoid getting lost in tail output
