@@ -25,7 +25,7 @@ runs:
     - name: Show connection command
       shell: bash
       run: |
-        echo -e "::notice::\u001b[102mREADME: SSH Connection instructions"
+        echo -e "::notice::\u001b[44mREADME: SSH Connection instructions"
         echo -e "::notice::\u001b[92mTo connect using SSH, run the following from inside the tailnet:"
         echo -e "::notice::\u001b[92m  ssh runner@github-$HOSTNAME"
         echo -e "::notice::\u001b[92mYour tailscale user must be in group:developers"
