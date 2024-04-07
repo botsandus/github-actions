@@ -13,6 +13,11 @@ function tail(file) {
     return;
   }
 
+  if ( !core.isDebug() ) {
+    code.notice("Rerun with debug logging to tail ${file}");
+    return;
+  }
+
   try {
     tail = new Tail(file, { fromBeginning: true });
     tail.on("line", function (data) {
@@ -21,6 +26,11 @@ function tail(file) {
     tail.on("error", function (error) {
       core.error(error);
     });
+
+    // Give the output that follows an imperfect chance
+    // to avoid getting lost in tail output
+    await sleep(1000);
+
   } catch (e) {
     core.error("Failed to tail log ${file}");
     core.error(e);
@@ -66,10 +76,6 @@ async function wait_sessions(
 ) {
   tail(tail_log);
 
-  // Give the output that follows an imperfect chance
-  // to avoid getting lost in tail output
-  await sleep(1000);
-
   log(`Waiting ${wait_minutes} minutes for sessions to start`);
   await sleep(wait_minutes * 60 * 1000);
 
@@ -110,7 +116,7 @@ async function run() {
   if (check_period == 0) check_period = 10;
   if (status_period == 0) status_period = 5 * 60;
 
-  //session_exe = 'sleep'; wait_minutes = 1/60; check_period = 1; status_period = 5;
+  session_exe = 'sleep'; wait_minutes = 2; check_period = 1; status_period = 5;
   wait_sessions(
     tail_log,
     session_exe,
