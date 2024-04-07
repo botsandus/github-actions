@@ -116,7 +116,7 @@ async function run() {
   if (check_period == 0) check_period = 10;
   if (status_period == 0) status_period = 5 * 60;
 
-  session_exe = 'sleep'; wait_minutes = 2; check_period = 1; status_period = 5;
+  session_exe = 'sleep'; wait_minutes = 2; check_period = 1; status_period = 20;
   wait_sessions(
     tail_log,
     session_exe,
