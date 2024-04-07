@@ -13,7 +13,7 @@
     "bundle": "npm run format:write && npm run package",
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
-    "package": "npx ncc build src/index.js -o dist --source-map"
+    "package": "npx ncc build src/main.js -o dist/main --source-map && npx ncc build src/post.js -o dist/post"
   },
   "dependencies": {
     "@actions/core": "^1.10.1",
