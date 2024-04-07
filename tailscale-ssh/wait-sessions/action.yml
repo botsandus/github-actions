@@ -25,5 +25,5 @@ inputs:
 runs:
   using: "node20"
   main: "src/main.js"
-  post: "dist/action.js"
+  post: "dist/index.js"
   post-if: "!cancelled()"
