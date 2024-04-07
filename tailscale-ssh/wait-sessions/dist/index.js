@@ -32891,7 +32891,7 @@ async function tail(file) {
   }
 
   if (!core.isDebug()) {
-    code.notice("Rerun with debug logging to tail ${file}");
+    core.notice("Rerun with debug logging to tail ${file}");
     return;
   }
 
