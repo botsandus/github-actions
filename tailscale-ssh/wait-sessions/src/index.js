@@ -8,12 +8,12 @@ function log(msg) {
   core.notice(moment().format("yyyy-MM-DD HH:mm:ss ") + msg);
 }
 
-function tail(file) {
+async function tail(file) {
   if (file.length == 0) {
     return;
   }
 
-  if ( !core.isDebug() ) {
+  if (!core.isDebug()) {
     code.notice("Rerun with debug logging to tail ${file}");
     return;
   }
@@ -30,7 +30,6 @@ function tail(file) {
     // Give the output that follows an imperfect chance
     // to avoid getting lost in tail output
     await sleep(1000);
-
   } catch (e) {
     core.error("Failed to tail log ${file}");
     core.error(e);
@@ -74,7 +73,7 @@ async function wait_sessions(
   check_period,
   status_period,
 ) {
-  tail(tail_log);
+  await tail(tail_log);
 
   log(`Waiting ${wait_minutes} minutes for sessions to start`);
   await sleep(wait_minutes * 60 * 1000);
@@ -116,7 +115,10 @@ async function run() {
   if (check_period == 0) check_period = 10;
   if (status_period == 0) status_period = 5 * 60;
 
-  session_exe = 'sleep'; wait_minutes = 2; check_period = 1; status_period = 20;
+  session_exe = "sleep";
+  wait_minutes = 2;
+  check_period = 1;
+  status_period = 20;
   wait_sessions(
     tail_log,
     session_exe,
