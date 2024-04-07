@@ -4,7 +4,7 @@ branding:
   icon: terminal
 
 inputs:
-  ssh-timeout:
+  ssh-wait-minutes:
     required: false
     type: number
     default: 10
@@ -33,41 +33,45 @@ runs:
         echo
 
     - name: Wait for SSH sessions
+      uses: botsandus/github-actions/tailscale-ssh/wait-sessions@TECH-149-Add-SSH-debug
+      with:
+        tail-log: /home/runner/tailscaled.log
+        wait-minutes: ${{ inputs.ssh-wait-minutes }}
       # This is the best option for a basb post command at the moment, however
       # it is missing post-if: '!cancelled()', so ignores cancellation
       # requests.  gacts/run-and-post-run was discounted because it doesn't
       # process multi-line scripts properly.
-      uses: srz-zumix/post-run-action@v1
-      with:
-        post-run: |
-          # We don't want -e as the script should complete its logic if anything
-          # like sleep or pipe are killed to avoid killing active SSH sessions.
-          set +e
-          log() { echo "$(date '+%F %T') $@"; }
-
-          tail -fn+0 --pid $$ /home/runner/tailscaled.log &
-
-          # Give the output that follows an imperfect chance to
-          # avoid getting lost in tail output
-          sleep 1
-
-          timout="${{inputs.ssh-timeout}}"
-          [[ -z $timeout ]] && timeout=10
-          log "Waiting $timeout minutes for SSH connections"
-          sleep $(( $timeout * 60 ))
-
-          # tailscaled spawns a login process for each SSH session
-          while true; do
-          log "Waiting for open sessions to close"
-            ps -C login -o pid=,stime=,cmd= || break
-
-            # Check every 10 seconds, report evety 5 minutes
-            for((i=0; i < (6*5-1); i++)); do
-              sleep 10
-              pgrep -x login > /dev/null || break 2
-            done
-            sleep 10
-
-          done
-
-          log "All sessions closed - exiting"
+      #uses: srz-zumix/post-run-action@v1
+      #with:
+      #  post-run: |
+      #    # We don't want -e as the script should complete its logic if anything
+      #    # like sleep or pipe are killed to avoid killing active SSH sessions.
+      #    set +e
+      #    log() { echo "$(date '+%F %T') $@"; }
+      #
+      #    tail -fn+0 --pid $$ /home/runner/tailscaled.log &
+      #
+      #    # Give the output that follows an imperfect chance to
+      #    # avoid getting lost in tail output
+      #    sleep 1
+      #
+      #    timout="${{inputs.ssh-timeout}}"
+      #    [[ -z $timeout ]] && timeout=10
+      #    log "Waiting $timeout minutes for SSH connections"
+      #    sleep $(( $timeout * 60 ))
+      #
+      #    # tailscaled spawns a login process for each SSH session
+      #    while true; do
+      #    log "Waiting for open sessions to close"
+      #      ps -C login -o pid=,stime=,cmd= || break
+      #
+      #      # Check every 10 seconds, report evety 5 minutes
+      #      for((i=0; i < (6*5-1); i++)); do
+      #        sleep 10
+      #        pgrep -x login > /dev/null || break 2
+      #      done
+      #      sleep 10
+      #
+      #    done
+      #
+      #    log "All sessions closed - exiting"

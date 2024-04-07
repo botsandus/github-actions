@@ -1,0 +1,28 @@
+name: 'Session wait'
+description: 'Wait for login sessions to terminate'
+
+inputs:
+  tail-log:
+    description: 'Log file to tail'
+    required: false
+  session-exe:
+    description: 'Executable indicating that sessions are still running'
+    required: false
+    default: 'login'
+  wait-minutes:
+    description: 'Number of minutes to wait for connections to be made, default 10'
+    type: number
+    required: false
+  check-period:
+    description: 'Number of seconds between checks for sessions, default 10'
+    type: number
+    required: false
+  status-period:
+    description: 'Number of seconds between status reports while waiting for sessions, default 5 minutes'
+    type: number
+    required: false
+
+runs:
+  using: 'node20'
+  post: 'index.js'
+  post-if: '!cancelled()'

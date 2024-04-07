@@ -28,7 +28,7 @@ on:
         type: boolean
         default: false
         description: Enable SSH debugging using Tailscale
-      ssh-timeout:
+      ssh-wait-minutes:
         required: false
         type: number
         description: Number of minutes to wait for SSH connection at end of workflow before timing out
@@ -60,7 +60,7 @@ jobs:
         if: ${{ inputs.ssh-debug }}
         uses: botsandus/github-actions/tailscale-ssh@TECH-149-Add-SSH-debug
         with:
-          ssh-timeout: ${{ inputs.ssh-timeout }}
+          ssh-wait-minutes: ${{ inputs.ssh-wait-minutes }}
           ts-authkey: ${{ secrets.TAILSCALE_CI_BUILDER_KEY }}
 
       - name: Expose GitHub Runtime
