@@ -25,13 +25,13 @@ runs:
     - name: Show connection command
       shell: bash
       run: |
-        echo -e "::notice::\u001b[42m\u001b[90mREADME: SSH Connection instructions"
+        echo -e "::notice::\u001b[102m\u001b[34mREADME: SSH Connection instructions"
         echo -e "::notice::\u001b[92mTo connect using SSH, run the following from inside the tailnet:"
         echo -e "::notice::\u001b[92m  ssh runner@github-$HOSTNAME"
         echo -e "::notice::\u001b[92mYour tailscale user must be in group:developers"
 
     - name: Wait for SSH sessions
-      uses: ./tailscale-ssh/wait-sessions
+      uses: botsandus/github-actions/tailscale-ssh/wait-sessions@TECH-149-Add-SSH-debug
       with:
         tail-log: /home/runner/tailscaled.log
         wait-minutes: ${{ inputs.ssh-wait-minutes }}
