@@ -23,6 +23,15 @@ on:
         type: string
         default: '["ubuntu-latest"]'
         description: A JSON payload describing the runner to use
+      ssh-debug:
+        required: false
+        type: boolean
+        default: true
+        description: Enable SSH debugging using Tailscale when debug logging is enabled
+      ssh-wait-minutes:
+        required: false
+        type: number
+        description: Number of minutes to wait for SSH connection at end of workflow before timing out
 
 jobs:
   pre-commit:
@@ -47,6 +56,18 @@ jobs:
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
+      - name: Tailscale SSH debug (${{
+          inputs.ssh-debug
+            && (runner.debug && 'enabled' || 're-run with debug logging to enable')
+            || 'disabled'
+          }})
+
+        if: ${{ inputs.ssh-debug && runner.debug }}
+        uses: botsandus/github-actions/tailscale-ssh@master
+        with:
+          ssh-wait-minutes: ${{ inputs.ssh-wait-minutes }}
+          ts-authkey: ${{ secrets.TAILSCALE_CI_BUILDER_KEY }}
+
       - name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@v1
 
