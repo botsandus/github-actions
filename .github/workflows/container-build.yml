@@ -58,7 +58,7 @@ jobs:
     steps:
       - name: Tailscale SSH debug (${{ 
           inputs.ssh-debug
-            && (runner.debug && 'enabled' || 'use debug logs to enable')
+            && (runner.debug && 'enabled' || 're-run with debug logging to enable')
             || 'disabled'
           }})
 
