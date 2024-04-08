@@ -103,6 +103,14 @@ async function wait_sessions(
 }
 
 async function run() {
+  const exit = async () => {
+    core.error('Killed')
+    process.exit(1)
+  }
+
+  process.on('SIGINT', exit)
+  process.on('SIGTERM', exit)
+
   const tail_log = core.getInput("tail-log");
   const session_exe = core.getInput("session-exe");
   let wait_minutes = core.getInput("wait-minutes");
