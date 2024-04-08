@@ -56,7 +56,12 @@ jobs:
       cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
-      - name: Tailscale SSH debug (${{ (inputs.ssh-debug && runner.debug) && 'enabled' || 'disabled' }})
+      - name: Tailscale SSH debug (${{ 
+          inputs.ssh-debug
+            && (runner.debug && 'enabled' || 'use debug logs to enable')
+            || 'disabled'
+          }})
+
         if: ${{ inputs.ssh-debug && runner.debug }}
         uses: botsandus/github-actions/tailscale-ssh@TECH-149-Add-SSH-debug
         with:
