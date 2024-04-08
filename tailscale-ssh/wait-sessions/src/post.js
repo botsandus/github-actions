@@ -8,6 +8,10 @@ function log(msg) {
   core.notice(moment().format("yyyy-MM-DD HH:mm:ss ") + msg);
 }
 
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function tail(file) {
   if (file.length == 0) {
     return;
@@ -19,11 +23,11 @@ async function tail(file) {
   }
 
   try {
-    tail = new Tail(file, { fromBeginning: true });
-    tail.on("line", function (data) {
+    const t = new Tail(file, { fromBeginning: true });
+    t.on("line", function (data) {
       core.debug(data);
     });
-    tail.on("error", function (error) {
+    t.on("error", function (error) {
       core.error(error);
     });
 
@@ -55,15 +59,11 @@ function check(session_exe, status) {
   // later default C++ than is currently available on GitHub runners and
   // isn't GitHub runner friendly.
   if (status) {
-    args = ["-o", "pid=,stime=,cmd=", "-C", session_exe];
+    const args = ["-o", "pid=,stime=,cmd=", "-C", session_exe];
     return exec("/usr/bin/ps", args, { stdio: "inherit" });
   } else {
     return exec("/usr/bin/pgrep", ["-x", session_exe]);
   }
-}
-
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function wait_sessions(
@@ -80,10 +80,11 @@ async function wait_sessions(
 
   check_period *= 1000;
   status_period *= 1000;
-  next_status = null;
+  let next_status = null;
 
-  while (true) {
-    now = Date.now();
+  for(;;) {
+    const now = Date.now();
+    let result;
 
     if (now >= next_status) {
       log(`Waiting for open sessions to close (${session_exe})`);
@@ -102,11 +103,11 @@ async function wait_sessions(
 }
 
 async function run() {
-  tail_log = core.getInput("tail-log");
-  session_exe = core.getInput("session-exe");
-  wait_minutes = core.getInput("wait-minutes");
-  check_period = core.getInput("check-period");
-  status_period = core.getInput("status-period");
+  const tail_log = core.getInput("tail-log");
+  const session_exe = core.getInput("session-exe");
+  let wait_minutes = core.getInput("wait-minutes");
+  let check_period = core.getInput("check-period");
+  let status_period = core.getInput("status-period");
 
   // Setting defaults here makes it easier for nested defaults from callers, as
   // missing inputs get propagated as empty strings or zeros.  This avoids
@@ -114,11 +115,6 @@ async function run() {
   if (wait_minutes == 0) wait_minutes = 10;
   if (check_period == 0) check_period = 10;
   if (status_period == 0) status_period = 5 * 60;
-
-  //session_exe = "sleep";
-  wait_minutes = 2;
-  check_period = 1;
-  status_period = 20;
 
   wait_sessions(
     tail_log,
