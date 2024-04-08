@@ -82,7 +82,7 @@ async function wait_sessions(
   status_period *= 1000;
   let next_status = null;
 
-  for(;;) {
+  for (;;) {
     const now = Date.now();
     let result;
 
