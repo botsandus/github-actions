@@ -26,7 +26,7 @@ on:
       ssh-debug:
         required: false
         type: boolean
-        default: false
+        default: true
         description: Enable SSH debugging using Tailscale with debug logging is enabled
       ssh-wait-minutes:
         required: false
