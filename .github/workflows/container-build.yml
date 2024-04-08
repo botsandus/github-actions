@@ -24,10 +24,10 @@ on:
         default: '["ubuntu-latest"]'
         description: A JSON payload describing the runner to use
       ssh-debug:
-        required: false
+        required: true
         type: boolean
         default: false
-        description: Enable SSH debugging using Tailscale
+        description: Enable SSH debugging using Tailscale with debug logging is enabled
       ssh-wait-minutes:
         required: false
         type: number
@@ -57,7 +57,7 @@ jobs:
 
     steps:
       - name: Tailscale SSH debug (${{ inputs.ssh-debug && 'enabled' || 'disabled' }})
-        if: ${{ inputs.ssh-debug }}
+        if: ${{ inputs.ssh-debug && runner.debug }}
         uses: botsandus/github-actions/tailscale-ssh@TECH-149-Add-SSH-debug
         with:
           ssh-wait-minutes: ${{ inputs.ssh-wait-minutes }}
