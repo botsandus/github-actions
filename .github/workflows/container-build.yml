@@ -24,7 +24,7 @@ on:
         default: '["ubuntu-latest"]'
         description: A JSON payload describing the runner to use
       ssh-debug:
-        required: true
+        required: false
         type: boolean
         default: false
         description: Enable SSH debugging using Tailscale with debug logging is enabled
