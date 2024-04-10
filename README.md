@@ -40,3 +40,12 @@ If you are a heavy user of debug logging and do not want the SSH debug
 functionility to be enabled at all in your workflow, it can be disabled using
 the `ssh-debug` input parameter, or the wait time can be tuned using
 `ssh-wait-minutes`.
+
+While waiting for sessions to complete, the following message will be displayed
+periodically - the IP address following -h is the connected user's address on
+the Tailnet, which can be queried using `tailscale status`:
+
+```
+2024-04-07 13:28:47 Waiting for open sessions to close
+   3221 11:14 /usr/bin/login -f        -h xxx.xxx.xxx.xxx -p
+```
