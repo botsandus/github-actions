@@ -42,7 +42,7 @@ the `ssh-debug` input parameter, or the wait time can be tuned using
 `ssh-wait-minutes`.
 
 While waiting for sessions to complete, the following message will be displayed
-periodically - the IP address following -h is the connected user's address on
+periodically - the IP address following `-h` is the connected user's address on
 the Tailnet, which can be queried using `tailscale status`:
 
 ```
