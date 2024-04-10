@@ -1,0 +1,46 @@
+name: 'Tailscale SSH'
+description: 'Join tailnet in SSH mode for debugging'
+branding:
+  icon: terminal
+
+inputs:
+  ssh-wait-minutes:
+    required: false
+    type: number
+    default: 10
+    description: Number of minutes to wait for SSH connections at end of job
+  ts-authkey:
+    required: true
+    description: Tailscale authkey
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Start tailscale
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ inputs.ts-authkey }}
+        tags: tag:ci-builder
+        args: --ssh
+    - name: Show connection command
+      shell: bash
+      run: |
+        echo -e "::notice::\u001b[44mREADME: SSH Connection instructions"
+        echo -e "::notice::\u001b[92mTo connect using SSH, run the following from inside the tailnet:"
+        echo -e "::notice::\u001b[92m  ssh runner@github-$HOSTNAME"
+        echo -e "::notice::\u001b[92mYour tailscale user must be in group:developers"
+
+    # The following step must be a "post" action to allow flow to continue
+    # after SSH is setup.  This also means that the output is at the end of the
+    # job, where it is visible to the user.  Unfortunately, composite actions
+    # don't support post steps and the current github actions on Marketplace
+    # that run bash script in post don't support cancellation, hence this had
+    # to be implemented in javascript.  As we want to use the off-the-shelf
+    # tailscale action to avoid overhead and javascript actions can't call
+    # other actions, this had to be implemented as a separate action.  If any
+    # of this changes in the future, the action can be simplified.
+    - name: Wait for SSH sessions
+      uses: botsandus/github-actions/wait-sessions@master
+      with:
+        tail-log: /home/runner/tailscaled.log
+        wait-minutes: ${{ inputs.ssh-wait-minutes }}
