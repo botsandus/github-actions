@@ -7874,7 +7874,7 @@ class Tail extends events.EventEmitter {
 
 }
 
-exports.x = Tail
+exports.Tail = Tail
 
 
 /***/ }),
@@ -31077,6 +31077,14 @@ module.exports = require("node:events");
 
 /***/ }),
 
+/***/ 7742:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:process");
+
+/***/ }),
+
 /***/ 4492:
 /***/ ((module) => {
 
@@ -32876,43 +32884,50 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const core = __nccwpck_require__(2186);
-
+const process = __nccwpck_require__(7742);
 const child_process = __nccwpck_require__(2081);
-const Tail = (__nccwpck_require__(5824)/* .Tail */ .x);
+const { Tail } = __nccwpck_require__(5824);
 const moment = __nccwpck_require__(9623);
 
-function log(msg) {
-  core.notice(moment().format("yyyy-MM-DD HH:mm:ss ") + msg);
+let on_exit = '';
+
+function log_msg(msg) {
+  return moment().format('yyyy-MM-DD HH:mm:ss ') + msg;
+}
+
+function notice(msg) {
+  core.notice(log_msg(msg));
+}
+function error(msg) {
+  core.error(log_msg(msg));
 }
 
 async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function tail(file) {
-  if (file.length == 0) {
+  if (file.length === 0) {
     return;
   }
 
   if (!core.isDebug()) {
-    core.notice(`Rerun with debug logging to tail ${file}`);
+    notice(`Rerun with debug logging to tail ${file}`);
     return;
   }
 
   try {
     const t = new Tail(file, { fromBeginning: true });
-    t.on("line", function (data) {
-      core.debug(data);
-    });
-    t.on("error", function (error) {
-      core.error(error);
-    });
+    t.on('line', (data) => core.debug(data));
+    t.on('error', (err) => core.error(err));
 
     // Give the output that follows an imperfect chance
     // to avoid getting lost in tail output
     await sleep(1000);
   } catch (e) {
-    core.error("Failed to tail log ${file}");
+    error(`Failed to tail log ${file}`);
     core.error(e);
   }
 }
@@ -32922,7 +32937,7 @@ function exec(cmd, args, options) {
     child_process.execFileSync(cmd, args, options);
     return true;
   } catch (e) {
-    if ("error" in e) {
+    if ('error' in e) {
       // Something went wrong - executable not found etc
       throw e;
     }
@@ -32936,11 +32951,10 @@ function check(session_exe, status) {
   // later default C++ than is currently available on GitHub runners and
   // isn't GitHub runner friendly.
   if (status) {
-    const args = ["-o", "pid=,stime=,cmd=", "-C", session_exe];
-    return exec("/usr/bin/ps", args, { stdio: "inherit" });
-  } else {
-    return exec("/usr/bin/pgrep", ["-x", session_exe]);
+    const args = ['-o', 'pid=,stime=,cmd=', '-C', session_exe];
+    return exec('/usr/bin/ps', args, { stdio: 'inherit' });
   }
+  return exec('/usr/bin/pgrep', ['-x', session_exe]);
 }
 
 async function wait_sessions(
@@ -32952,11 +32966,11 @@ async function wait_sessions(
 ) {
   await tail(tail_log);
 
-  log(`Waiting ${wait_minutes} minutes for sessions to start`);
+  notice(`Waiting ${wait_minutes} minutes for sessions to start`);
   await sleep(wait_minutes * 60 * 1000);
 
-  check_period *= 1000;
-  status_period *= 1000;
+  const check_period_ms = check_period * 1000;
+  const status_period_ms = status_period * 1000;
   let next_status = null;
 
   for (;;) {
@@ -32964,42 +32978,89 @@ async function wait_sessions(
     let result;
 
     if (now >= next_status) {
-      log(`Waiting for open sessions to close (${session_exe})`);
+      notice(`Waiting for open sessions to close (${session_exe})`);
       result = check(session_exe, true);
-      next_status = now + status_period;
+      next_status = now + status_period_ms;
     } else {
       result = check(session_exe, false);
     }
 
     if (!result) break;
-    await sleep(check_period);
+    await sleep(check_period_ms); // eslint-disable-line no-await-in-loop
   }
 
-  log("All sessions closed - exiting");
-  process.exit(0);
+  notice('All sessions closed');
+}
+
+function parse_on_exit(on_exit_json) {
+  on_exit = null;
+  if (on_exit_json === null || on_exit_json.length === 0) return;
+
+  let obj = null;
+  let valid = true;
+
+  try {
+    obj = JSON.parse(on_exit_json);
+  } catch (e) {
+    valid = false;
+  }
+
+  if (!valid || !Array.isArray(obj) || !obj.every((x) => typeof x === 'string')) {
+    throw new Error(`Invalid JSON string array on-exit: ${on_exit_json}`);
+  }
+
+  if (obj.length === 0) return;
+
+  on_exit = obj;
+}
+
+function exec_on_exit() {
+  if (on_exit === null) return;
+
+  const my_on_exit = on_exit;
+  on_exit = null;
+  notice(`Executing on-exit: ${JSON.stringify(my_on_exit)}`);
+  exec(my_on_exit[0], my_on_exit.slice(1));
+}
+
+function do_exit(rc) {
+  const msg = `exit(${rc})`;
+  if (rc === 0) notice(msg);
+  else error(msg);
+  process.exit(rc);
+}
+
+function on_signal(signal, code) {
+  error(`Recieved ${signal}`);
+  exec_on_exit();
+  do_exit(code + 128);
 }
 
 async function run() {
-  const tail_log = core.getInput("tail-log");
-  const session_exe = core.getInput("session-exe");
-  let wait_minutes = core.getInput("wait-minutes");
-  let check_period = core.getInput("check-period");
-  let status_period = core.getInput("status-period");
-
   // Setting defaults here makes it easier for nested defaults from callers, as
   // missing inputs get propagated as empty strings or zeros.  This avoids
   // having to set defaults all the way up the action/workflow stack.
-  if (wait_minutes == 0) wait_minutes = 10;
-  if (check_period == 0) check_period = 10;
-  if (status_period == 0) status_period = 5 * 60;
+  const tail_log = core.getInput('tail-log');
+  const session_exe = core.getInput('session-exe') || 'login';
+  const wait_minutes = parseInt(core.getInput('wait-minutes'), 10) || 10;
+  const check_period = parseInt(core.getInput('check-period'), 10) || 10;
+  const status_period = parseInt(core.getInput('status-period'), 10) || 5 * 60;
+  const on_exit_json = core.getInput('on-exit');
 
-  wait_sessions(
+  parse_on_exit(on_exit_json);
+  process.on('SIGINT', on_signal);
+  process.on('SIGTERM', on_signal);
+
+  await wait_sessions(
     tail_log,
     session_exe,
     wait_minutes,
     check_period,
     status_period,
   );
+
+  exec_on_exit();
+  do_exit(0);
 }
 
 run();

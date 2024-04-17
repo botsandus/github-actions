@@ -1,2 +1,4 @@
+.PHONY: all
+
 all:
-	npm run bundle
+	npm run package

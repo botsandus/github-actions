@@ -16,19 +16,25 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Calculate values
+      id: vars
+      shell: bash
+      run: echo "hostname=github-${{github.event.repository.name}}-${{github.run_number}}-${{github.run_attempt}}" >> "$GITHUB_OUTPUT"
+
     - name: Start tailscale
       uses: tailscale/github-action@v2
       with:
         authkey: ${{ inputs.ts-authkey }}
         tags: tag:ci-builder
-        args: --ssh
+        args: --ssh --operator=runner --hostname=${{steps.vars.outputs.hostname}}
+
     - name: Show connection command
       shell: bash
       run: |
-        echo -e "::notice::\u001b[44mREADME: SSH Connection instructions"
-        echo -e "::notice::\u001b[92mTo connect using SSH, run the following from inside the tailnet:"
-        echo -e "::notice::\u001b[92m  ssh runner@github-$HOSTNAME"
-        echo -e "::notice::\u001b[92mYour tailscale user must be in group:developers"
+        echo -en "::warning title=SSH Debugging Enabled::\u001b[44m\u001b[37mSSH Debugging Enabled%0A"
+        echo -en "\u001b[92mTo connect using SSH, run the following from inside the tailnet:%0A"
+        echo -en "\u001b[92m  ssh runner@${{steps.vars.outputs.hostname}}%0A"
+        echo -en "\u001b[92mYour tailscale user must be in group:developers\n"
 
     # The following step must be a "post" action to allow flow to continue
     # after SSH is setup.  This also means that the output is at the end of the
@@ -44,3 +50,4 @@ runs:
       with:
         tail-log: /home/runner/tailscaled.log
         wait-minutes: ${{ inputs.ssh-wait-minutes }}
+        on-exit: '["/usr/bin/tailscale", "logout"]'
