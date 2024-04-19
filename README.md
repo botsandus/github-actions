@@ -23,10 +23,10 @@ locate the following section of the job output to determine the SSH command to
 use:
 
 ```
-Notice: README: SSH Connection instructions
-Notice: To connect using SSH, run the following from inside the tailnet:
-Notice:   ssh runner@github-xx-xxxxxx-xx
-Notice: Your tailscale user must be in group:developers
+Warning: SSH Debugging Enabled
+To connect using SSH, run the following from inside the tailnet:
+  ssh runner@github-${{repo}}-${{run_number}}-${{run_attempt}}
+Your tailscale user must be in group:developers
 ```
 
 A post-step in the relevant job will wait a configurable number of minutes
