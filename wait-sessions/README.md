@@ -12,7 +12,8 @@ that might be useful when debugging connectivity - this is enabled using the
 `tail-log` optional input.
 
 The action can be can terminated at any time using the GitHub Actions cancel
-button.
+button.  An optional `on-exit` input parameter can be set to execute a program
+to clean up resource for successful, failed and cancelled executions.
 
 Usage:
 

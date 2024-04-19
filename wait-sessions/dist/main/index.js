@@ -5,6 +5,8 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
+// This action has a post step, but no main.  Since main is mandatory for
+// GitHub actions, an empty script is provided to meet the requirement.
 
 module.exports = __webpack_exports__;
 /******/ })()

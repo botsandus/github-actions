@@ -21,6 +21,9 @@ inputs:
     description: "Number of seconds between status reports while waiting for sessions, default 5 minutes"
     type: number
     required: false
+  on-exit:
+    description: "Program and arguments to execute on exit (e.g. to cleanup resource) as JSON array of strings"
+    required: false
 
 runs:
   using: "node20"
