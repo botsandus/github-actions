@@ -19,8 +19,8 @@ job screen and follow the steps to re-run, after ticking "Enable debug
 logging".
 
 In order to to connect, install Tailscale and SSH, login to Tailscale and
-locate the following section of the job output to determine the SSH command to
-use:
+locate the following section of the `Tailscale SSH debug` step output to
+determine the SSH command to use:
 
 ```
 Warning: SSH Debugging Enabled
