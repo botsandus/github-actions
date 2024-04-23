@@ -1,11 +1,4 @@
-# This workflow will build a Docker container, including running any tests which
-# are part of the build process.
-#
-# If the workflow is triggered as part of an explicit dispatch, pull request, or
-# push to master/main then the image will also be pushed to ECR.
-
-name: Container build
-
+name: Build ARRI production image
 on:
   workflow_call:
     inputs:
@@ -92,8 +85,14 @@ jobs:
             { "BlockDeviceMappings": [{ "DeviceName": "/dev/sda1", "Ebs": { "VolumeSize": 64 } }] }
 
   build:
-    needs: start-runner
+    needs:
+      - start-runner
+
     runs-on: ${{ needs.start-runner.outputs.label }}
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
     steps:
       - name: Expose GitHub Runtime
@@ -126,9 +125,17 @@ jobs:
           BRANCH=${{ inputs.featureName }}
           BRANCH=${BRANCH//[^a-zA-Z0-9\-]/\-} # Strip any invalid characters
 
-          BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${BRANCH}
+          BUILD_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}
+          BUILD_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${BRANCH}
+          BUILD_COMMIT_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${GITHUB_SHA}
+          BUILD_COMMIT_BRANCH_TAG=$REPO:build-${{ github.run_number }}-${{ inputs.triggeringRepo }}-${GITHUB_SHA}-${BRANCH}
 
-          echo "::set-output name=tags::$BUILD_TAG"
+          echo "::set-output name=tags::$BUILD_TAG,$BUILD_BRANCH_TAG,$BUILD_COMMIT_TAG,$BUILD_COMMIT_BRANCH_TAG"
+
+      - name: Get git tag for build
+        id: git-tag
+        run: |
+          echo "git-tag=$(git describe --tags || echo '')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -148,8 +155,22 @@ jobs:
             FEATURE_NAME=${{ inputs.featureName }}
             TRIGGERING_REPO=${{ inputs.triggeringRepo }}
           tags: ${{ steps.tag-calculator.outputs.tags }}
-          # cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache
-          # cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecrRepo }}:github-action-build-cache,mode=max
+
+      - name: Build and push the ccache container
+        id: ccache-build
+        uses: docker/build-push-action@v3
+        env:
+          DOCKER_BUILDKIT: 1
+        with:
+          context: .
+          file: .balena/Dockerfile
+          push: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')) }}
+          build-args: |
+            GIT_CHECKOUT_PAT=${{ secrets.GIT_CHECKOUT_PAT }}
+            BUILD_NUMBER=${{ github.run_number }}
+            GIT_TAG=${{ steps.git-tag.outputs.git-tag }}
+          target: ccache
+          tags: ${{ steps.login-ecr.outputs.registry }}/botsandus/arri/arri-ros-development-ccache:latest
 
   stop-runner:
     name: Stop build runner on EC2
