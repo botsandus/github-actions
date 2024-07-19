@@ -11,7 +11,7 @@ inputs:
     description: Number of minutes to wait for SSH connections at end of job
   ts-oauth-client-id:
     required: true
-  ts_oauth-secret:
+  ts-oauth-secret:
     required: true
 
 runs:
