@@ -24,7 +24,8 @@ runs:
     - name: Start tailscale
       uses: tailscale/github-action@v2
       with:
-        authkey: ${{ inputs.ts-authkey }}
+        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
         tags: tag:ci-builder
         args: --ssh --operator=runner --hostname=${{steps.vars.outputs.hostname}}
 
