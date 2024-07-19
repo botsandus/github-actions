@@ -10,8 +10,8 @@ inputs:
     default: 10
     description: Number of minutes to wait for SSH connections at end of job
   ts-authkey:
-    required: true
-    description: Tailscale authkey
+    required: false
+    description: Deprecated: Ignored by implementation
 
 runs:
   using: 'composite'
@@ -32,6 +32,9 @@ runs:
     - name: Show connection command
       shell: bash
       run: |
+        [[ -n '${{ inputs.ts-authkey }}' ]] \
+          && echo "::warning:: inputs.ts-authkey is deprecated for botsandus/github-actions/tailscale-ssh"
+
         echo -en "::warning title=SSH Debugging Enabled::\u001b[44m\u001b[37mSSH Debugging Enabled%0A"
         echo -en "\u001b[92mTo connect using SSH, run the following from inside the tailnet:%0A"
         echo -en "\u001b[92m  ssh runner@${{steps.vars.outputs.hostname}}%0A"
