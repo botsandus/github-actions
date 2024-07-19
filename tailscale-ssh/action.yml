@@ -11,7 +11,7 @@ inputs:
     description: Number of minutes to wait for SSH connections at end of job
   ts-authkey:
     required: false
-    description: Deprecated: Ignored by implementation
+    description: Deprecated - ignored by implementation
 
 runs:
   using: 'composite'
