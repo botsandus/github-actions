@@ -9,9 +9,10 @@ inputs:
     type: number
     default: 10
     description: Number of minutes to wait for SSH connections at end of job
-  ts-authkey:
-    required: false
-    description: Deprecated - ignored by implementation
+  ts-oauth-client-id:
+    required: true
+  ts_oauth-secret:
+    required: true
 
 runs:
   using: 'composite'
@@ -24,8 +25,8 @@ runs:
     - name: Start tailscale
       uses: tailscale/github-action@v2
       with:
-        oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-        oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+        oauth-client-id: ${{ inputs.ts-oauth-client-id }}
+        oauth-secret: ${{ inputs.ts-oauth-secret }}
         tags: tag:ci-builder
         args: --ssh --operator=runner --hostname=${{steps.vars.outputs.hostname}}
 
