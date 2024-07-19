@@ -9,7 +9,8 @@ steps:
   - name: Tailscale SSH debug
     uses: botsandus/github-actions/tailscale-ssh@master
     with:
-      ts-authkey: ${{ secrets.TAILSCALE_CI_BUILDER_KEY }}
+      ts-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      ts-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 ```
 
 For optional input parameters, see [action.yml](action.yml).
