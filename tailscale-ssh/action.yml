@@ -26,6 +26,8 @@ runs:
 
     - name: Start tailscale
       uses: tailscale/github-action@v2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       with:
         oauth-client-id: ${{ inputs.ts-oauth-client-id }}
         oauth-secret: ${{ inputs.ts-oauth-secret }}
