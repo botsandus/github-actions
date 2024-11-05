@@ -56,9 +56,9 @@ runs:
     # other actions, this had to be implemented as a separate action.  If any
     # of this changes in the future, the action can be simplified.
     - name: Wait for SSH sessions
-      if: ${{ inputs.ssh-wait-minutes }}
+      if: ${{ inputs.ssh-wait-minutes > 0 }}
       uses: botsandus/github-actions/wait-sessions@master
       with:
         tail-log: /home/runner/tailscaled.log
-        wait-minutes: ${{ inputs.ssh-wait-minutes > 0 }}
+        wait-minutes: ${{ inputs.ssh-wait-minutes }}
         on-exit: '["/usr/bin/tailscale", "logout"]'
