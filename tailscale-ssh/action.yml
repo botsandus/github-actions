@@ -60,5 +60,5 @@ runs:
       uses: botsandus/github-actions/wait-sessions@master
       with:
         tail-log: /home/runner/tailscaled.log
-        wait-minutes: ${{ inputs.ssh-wait-minutes }}
+        wait-minutes: ${{ inputs.ssh-wait-minutes > 0 }}
         on-exit: '["/usr/bin/tailscale", "logout"]'
