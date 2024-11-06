@@ -36,8 +36,8 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       with:
-        oauth-client-id: ${{ inputs.ts-oauth-client-id }}
-        oauth-secret: ${{ inputs.ts-oauth-secret }}
+        oauth-client-id: ${{ inputs.oauth-client-id }}
+        oauth-secret: ${{ inputs.oauth-secret }}
         tags: ${{ inputs.tags }}
         args: ${{ inputs.ssh && '--ssh' || '' }} --operator=runner --hostname=${{steps.vars.outputs.hostname}}
 
