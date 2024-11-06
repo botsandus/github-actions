@@ -1,0 +1,59 @@
+name: 'Tailscale Up'
+description: 'Join tailnet'
+
+inputs:
+  ssh:
+    reuired: false
+    default: ${{ runner.debug }}
+    type: boolean
+    description: "Enable SSH"
+  ssh-wait-minutes:
+    required: false
+    type: number
+    default: 1
+    description: 'Number of minutes to wait for SSH connections at end of job'
+  oauth-client-id:
+    description: 'Tailscale OAuth Client ID'
+    required: true
+  oauth-secret:
+    description: 'Tailscale OAuth Client Secret'
+    required: true
+  tags:
+    description: 'Tailscale tags'
+    required: false
+    default: "tag:ci-builder"
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Calculate values
+      id: vars
+      shell: bash
+      run: echo "hostname=github-${{github.event.repository.name}}-${{github.run_number}}-${{github.run_attempt}}" >> "$GITHUB_OUTPUT"
+
+    - name: Start tailscale
+      uses: tailscale/github-action@v2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        oauth-client-id: ${{ inputs.oauth-client-id }}
+        oauth-secret: ${{ inputs.oauth-secret }}
+        tags: ${{ inputs.tags }}
+        args: ${{ inputs.ssh && '--ssh' || '' }} --operator=runner --hostname=${{steps.vars.outputs.hostname}}
+
+    - name: Show connection command
+      if: ${{ inputs.ssh }}
+      shell: bash
+      run: |
+        echo -en "::info title=SSH Debugging Enabled::\u001b[44m\u001b[37mSSH Debugging Enabled%0A"
+        echo -en "\u001b[92mTo connect using SSH, run the following from inside the tailnet:%0A"
+        echo -en "\u001b[92m  ssh runner@${{steps.vars.outputs.hostname}}%0A"
+        echo -en "\u001b[92mYour tailscale user must be in group:developers\n"
+
+    - name: Wait for SSH sessions
+      if: ${{ inputs.ssh && inputs.ssh-wait-minutes > 0 }}
+      uses: botsandus/github-actions/wait-sessions@master
+      with:
+        tail-log: /home/runner/tailscaled.log
+        wait-minutes: ${{ inputs.ssh-wait-minutes }}
+        on-exit: '["/usr/bin/tailscale", "logout"]'
