@@ -7,10 +7,10 @@ Usage:
 ```yaml
 steps:
   - name: Tailscale SSH debug
-    uses: botsandus/github-actions/tailscale-ssh@master
+    uses: botsandus/github-actions/tailscale-up@master
     with:
-      ts-oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-      ts-oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+      oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 ```
 
 For optional input parameters, see [action.yml](action.yml).
