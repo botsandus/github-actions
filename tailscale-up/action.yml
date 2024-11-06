@@ -4,7 +4,7 @@ description: 'Join tailnet'
 inputs:
   ssh:
     reuired: false
-    default: false
+    default: ${{ runner.debug }}
     type: boolean
     description: "Enable SSH"
   ssh-wait-minutes:
