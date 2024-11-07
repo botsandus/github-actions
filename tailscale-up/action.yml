@@ -45,10 +45,13 @@ runs:
       if: ${{ inputs.ssh }}
       shell: bash
       run: |
-        echo -en "::info title=SSH Debugging Enabled::\u001b[44m\u001b[37mSSH Debugging Enabled%0A"
+        echo -en "::notice title=SSH Debugging Enabled::\u001b[44m\u001b[37mSSH Debugging Enabled%0A"
         echo -en "\u001b[92mTo connect using SSH, run the following from inside the tailnet:%0A"
         echo -en "\u001b[92m  ssh runner@${{steps.vars.outputs.hostname}}%0A"
         echo -en "\u001b[92mYour tailscale user must be in group:developers\n"
+
+    - run: sleep 2 # TODO: Update the tailnet step to wait for initialisation to complete
+      shell: bash
 
     - name: Wait for SSH sessions
       if: ${{ inputs.ssh && inputs.ssh-wait-minutes > 0 }}
