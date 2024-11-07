@@ -50,6 +50,8 @@ runs:
         echo -en "\u001b[92m  ssh runner@${{steps.vars.outputs.hostname}}%0A"
         echo -en "\u001b[92mYour tailscale user must be in group:developers\n"
 
+    - run: sleep 2 # TODO: Update the tailnet step to wait for initialisation to complete
+
     - name: Wait for SSH sessions
       if: ${{ inputs.ssh && inputs.ssh-wait-minutes > 0 }}
       uses: botsandus/github-actions/wait-sessions@master
