@@ -36,6 +36,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
       with:
+        version: latest
         oauth-client-id: ${{ inputs.oauth-client-id }}
         oauth-secret: ${{ inputs.oauth-secret }}
         tags: ${{ inputs.tags }}
