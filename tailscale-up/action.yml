@@ -40,7 +40,8 @@ runs:
         oauth-client-id: ${{ inputs.oauth-client-id }}
         oauth-secret: ${{ inputs.oauth-secret }}
         tags: ${{ inputs.tags }}
-        args: ${{ inputs.ssh && '--ssh' || '' }} --operator=runner --hostname=${{steps.vars.outputs.hostname}}
+        args: ${{ inputs.ssh && '--ssh' || '' }} --operator=runner
+        hostname: ${{steps.vars.outputs.hostname}}
 
     - name: Show connection command
       if: ${{ inputs.ssh }}
