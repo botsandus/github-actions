@@ -7,7 +7,7 @@ inputs:
   ssh-wait-minutes:
     required: false
     type: number
-    default: 10
+    default: 1
     description: 'Number of minutes to wait for SSH connections at end of job'
   ts-oauth-client-id:
     description: 'Tailscale OAuth Client ID'
