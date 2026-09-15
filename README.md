@@ -1,7 +1,12 @@
+# Overview
+
+This repository contains shared templates for GitHub actions, such as any
+reusable workflows and composite actions.
+
 # Hiroz (Dexory fork)
 
-Reusable workflows consumed by `botsandus/hiroz` on the `dexory` branch. Callers
-in that repo are thin `uses:` stubs; the job bodies live here so the public
+Reusable workflows for `botsandus/hiroz` on the `dexory` branch. Callers in
+that repo are thin `uses:` stubs; the job bodies live here so the public
 upstream fork stays small.
 
 | Workflow | Purpose |
