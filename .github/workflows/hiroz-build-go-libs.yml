@@ -1,0 +1,83 @@
+# Dexory hiroz: build lyrical libhiroz.a for Go consumers.
+#
+# Called from botsandus/hiroz. Uploads per-target artifacts; does NOT create a
+# GitHub Release (that is hiroz-cut-release.yml, which attaches them to
+# dexory/vX.Y.Z).
+
+name: hiroz build Go libs
+
+on:
+  workflow_call:
+
+env:
+  DISTRO: lyrical
+
+jobs:
+  build:
+    name: libhiroz (lyrical, ${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust target (aarch64 Linux cross)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install ziglang (aarch64 Linux cross)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: pip install ziglang
+
+      - name: Install cargo-zigbuild (aarch64 Linux cross)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Build libhiroz (native)
+        if: matrix.target != 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          cargo build --release \
+            --features ffi,rmw-zenoh,${DISTRO} \
+            --no-default-features \
+            --target ${{ matrix.target }} \
+            -p hiroz
+
+      - name: Build libhiroz (aarch64 Linux via zigbuild)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          cargo zigbuild --release \
+            --features ffi,rmw-zenoh,${DISTRO} \
+            --no-default-features \
+            --target ${{ matrix.target }} \
+            -p hiroz
+
+      - name: Package library + header
+        shell: bash
+        run: |
+          mkdir -p go-dist
+          src="target/${{ matrix.target }}/release"
+          name="libhiroz-${DISTRO}-${{ matrix.target }}"
+          [ -f "$src/libhiroz.a" ] && cp "$src/libhiroz.a" "go-dist/${name}.a"
+          cp crates/hiroz-go/hiroz/hiroz_ffi.h "go-dist/hiroz_ffi.h"
+          ls -la go-dist
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libhiroz-${{ env.DISTRO }}-${{ matrix.target }}
+          path: go-dist/*

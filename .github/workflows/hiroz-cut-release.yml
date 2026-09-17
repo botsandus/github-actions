@@ -1,0 +1,148 @@
+# Dexory hiroz: cut dexory/vX.Y.Z + dexory-msgs-go/vX.Y.Z and attach libhiroz.a.
+#
+# Called from botsandus/hiroz via "Cut Dexory release". Tags are immutable;
+# do not clobber go-libs-lyrical.
+
+name: hiroz cut Dexory release
+
+on:
+  workflow_call:
+    inputs:
+      bump:
+        description: 'Semver bump (minor = message changes, patch = runtime/FFI only)'
+        type: string
+        default: minor
+
+jobs:
+  preflight:
+    name: Compute version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve next Dexory version
+        id: ver
+        env:
+          BUMP: ${{ inputs.bump }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags origin --force
+          BRANCH="${GITHUB_REF_NAME:-}"
+          if [ "$BRANCH" != "dexory" ]; then
+            echo "::error::Cut Dexory release only from the dexory branch (got ${BRANCH})"
+            exit 1
+          fi
+          case "$BUMP" in
+            minor|patch|major) ;;
+            *) echo "::error::bump must be minor, patch, or major (got ${BUMP})"; exit 1 ;;
+          esac
+
+          LATEST="$(git tag -l 'dexory/v*' | sed 's|^dexory/v||' | sort -V | tail -1 || true)"
+          if [ -z "$LATEST" ]; then
+            # Continue the dexory-msgs-go/v0.5.0 series.
+            MAJOR=0 MINOR=5 PATCH=0
+            PREV_REF="dexory-msgs-go/v0.5.0"
+            if ! git rev-parse -q --verify "refs/tags/${PREV_REF}" >/dev/null; then
+              PREV_REF=""
+            fi
+          else
+            IFS=. read -r MAJOR MINOR PATCH <<<"$LATEST"
+            PREV_REF="dexory/v${LATEST}"
+          fi
+
+          if [ "$BUMP" = "minor" ] && [ -n "$PREV_REF" ]; then
+            if git diff --quiet "$PREV_REF" HEAD -- dexory-msgs-rust dexory-msgs-go dexory-msgs.pin; then
+              echo "::error::No dexory-msgs changes since ${PREV_REF}. Use bump=patch for a runtime/FFI-only release."
+              exit 1
+            fi
+          fi
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="dexory/v${VERSION}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "::error::Tag ${TAG} already exists"
+            exit 1
+          fi
+          echo "Next Dexory version: ${VERSION} (bump=${BUMP}, previous=${LATEST:-none})"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build libhiroz
+    needs: [preflight]
+    uses: ./.github/workflows/hiroz-build-go-libs.yml
+
+  publish:
+    name: Tag + GitHub Release
+    needs: [preflight, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download libhiroz artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Collect assets
+        shell: bash
+        run: |
+          mkdir -p assets
+          find dist -name 'libhiroz-*.a' -exec cp {} assets/ \;
+          find dist -name 'hiroz_ffi.h' -exec cp {} assets/ \; -quit
+          ls -la assets
+          test -n "$(ls -A assets/libhiroz-*.a 2>/dev/null)" || {
+            echo "::error::No libhiroz.a artifacts to attach"
+            exit 1
+          }
+
+      - name: Create tags and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.preflight.outputs.version }}
+          TAG: ${{ needs.preflight.outputs.tag }}
+          PIN: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          AS_PIN="$(tr -d '[:space:]' < dexory-msgs.pin || true)"
+          git tag -a "$TAG" -m "Dexory ${VERSION}"
+          git tag -a "dexory-msgs-go/v${VERSION}" -m "dexory-msgs-go v${VERSION}"
+          git push origin "$TAG" "dexory-msgs-go/v${VERSION}"
+
+          NOTES="$(cat <<EOF
+          Dexory hiroz **${VERSION}**
+
+          - Product tag: \`${TAG}\` (Rust: pin \`hiroz\` / \`hiroz-msgs\` / \`dexory-msgs\` here)
+          - Go module tag: \`dexory-msgs-go/v${VERSION}\`
+          - auto-sandbox pin: \`${AS_PIN:-unknown}\`
+          - commit: \`${GITHUB_SHA}\`
+
+          Prebuilt \`libhiroz.a\` (lyrical) for x86_64-linux, aarch64-linux, aarch64-apple-darwin, plus \`hiroz_ffi.h\`.
+          EOF
+          )"
+          gh release create "$TAG" assets/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "Dexory ${VERSION}" \
+            --notes "$NOTES"
+          echo "Published ${TAG}"

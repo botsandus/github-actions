@@ -1,0 +1,124 @@
+# Dexory hiroz: codegen + drift guard for dexory-msgs-rust / dexory-msgs-go.
+#
+# Called from botsandus/hiroz (dexory branch). Checkouts the caller repo.
+# Secrets (inherit from the fork): HIROZ_READ_TOKEN or AUTO_SANDBOX_READ_TOKEN
+# to fetch private auto-sandbox + vendor.repos.
+
+name: hiroz dexory-msgs
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: 'Regenerate and commit dexory-msgs on the caller branch'
+        type: boolean
+        default: false
+
+jobs:
+  drift-check:
+    name: Drift check + build dexory-msgs
+    if: ${{ !inputs.commit }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-substituters = https://hiroz.cachix.org
+            extra-trusted-public-keys = hiroz.cachix.org-1:wKJuqEckTG0DL3Df7Ly9OVsg5S5TGBHtvlPGs+vlqrY=
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: hiroz
+
+      - name: Setup nix environment
+        run: |
+          nix print-dev-env '.#pureRust-ci' --accept-flake-config > /tmp/nix-dev-env.sh
+          echo "export CI=true" >> /tmp/nix-dev-env.sh
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: dexory-msgs
+
+      - name: Drift check (regenerate + git diff)
+        env:
+          GH_TOKEN: ${{ secrets.HIROZ_READ_TOKEN || secrets.AUTO_SANDBOX_READ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          source /tmp/nix-dev-env.sh
+          bash scripts/validate-dexory-msgs.sh
+        shell: bash
+
+      - name: Build generated libraries
+        env:
+          GOPRIVATE: github.com/botsandus
+        run: |
+          source /tmp/nix-dev-env.sh
+          cargo build -p dexory-msgs
+          ( cd dexory-msgs-go && go build ./... && go vet ./... )
+        shell: bash
+
+  regenerate-commit:
+    name: Regenerate + commit dexory-msgs
+    if: ${{ inputs.commit }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-substituters = https://hiroz.cachix.org
+            extra-trusted-public-keys = hiroz.cachix.org-1:wKJuqEckTG0DL3Df7Ly9OVsg5S5TGBHtvlPGs+vlqrY=
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: hiroz
+
+      - name: Setup nix environment
+        run: |
+          nix print-dev-env '.#pureRust-ci' --accept-flake-config > /tmp/nix-dev-env.sh
+          echo "export CI=true" >> /tmp/nix-dev-env.sh
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: dexory-msgs
+
+      - name: Regenerate + commit (bot)
+        env:
+          GH_TOKEN: ${{ secrets.HIROZ_READ_TOKEN || secrets.AUTO_SANDBOX_READ_TOKEN }}
+        run: |
+          source /tmp/nix-dev-env.sh
+          bash scripts/gen-dexory-msgs.sh
+          if [ -n "$(git status --porcelain dexory-msgs-rust dexory-msgs-go)" ]; then
+            git config user.name  "hiroz-bot"
+            git config user.email "hiroz-bot@users.noreply.github.com"
+            git add dexory-msgs-rust dexory-msgs-go
+            git commit -m "dexory-msgs: regenerate from auto-sandbox @ $(cat dexory-msgs.pin)"
+            git push
+          else
+            echo "no changes — libraries already up to date"
+          fi
+        shell: bash

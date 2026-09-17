@@ -3,6 +3,22 @@
 This repository contains shared templates for GitHub actions, such as any
 reusable workflows and composite actions.
 
+# Hiroz (Dexory fork)
+
+Reusable workflows for `botsandus/hiroz` on the `dexory` branch. Callers in
+that repo are thin `uses:` stubs; the job bodies live here so the public
+upstream fork stays small.
+
+| Workflow | Purpose |
+|---|---|
+| [`.github/workflows/hiroz-dexory-msgs.yml`](.github/workflows/hiroz-dexory-msgs.yml) | Drift-check / regenerate `dexory-msgs` |
+| [`.github/workflows/hiroz-build-go-libs.yml`](.github/workflows/hiroz-build-go-libs.yml) | Build lyrical `libhiroz.a` (no GitHub Release) |
+| [`.github/workflows/hiroz-cut-release.yml`](.github/workflows/hiroz-cut-release.yml) | Tag `dexory/vX.Y.Z` + `dexory-msgs-go/vX.Y.Z` and attach the `.a` files |
+
+Until this branch is merged, pin callers at `@hiroz-dexory-workflows`; after
+merge, `@master`. The fork must `secrets: inherit` so `HIROZ_READ_TOKEN`
+(or `AUTO_SANDBOX_READ_TOKEN`) can read auto-sandbox and vendor.repos.
+
 # SSH Debug
 
 Some reusable workflows contian a feature to allow users to debug failed builds
